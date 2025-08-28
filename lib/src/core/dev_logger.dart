@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:developer' as developer;
-import 'dart:io' show stdout, IOSink;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -95,7 +94,6 @@ class DevLogger {
   Timer? _flutterWarningTimer;
   
   // stdout interception
-  IOSink? _originalStdout;
   StreamController<List<int>>? _stdoutController;
   
   DevLogger._internal() {
@@ -168,224 +166,108 @@ class DevLogger {
   
   Zone? _printInterceptZone;
   
-  // Helper method to process captured Flutter errors
-  void _processFlutterError(String mainMessage, String fullError) {
-    // For RenderFlex overflow and similar errors
-    if (mainMessage.contains('RenderFlex overflowed') || 
-        mainMessage.contains('RenderBox')) {
-      
-      // Extract widget info
-      String? widgetInfo;
-      final lines = fullError.split('\n');
-      for (int i = 0; i < lines.length; i++) {
-        if (lines[i].contains('The relevant error-causing widget was:') && 
-            i + 1 < lines.length) {
-          final widgetLine = lines[i + 1].trim();
-          final match = RegExp(r'(\w+)').firstMatch(widgetLine);
-          if (match != null) {
-            widgetInfo = match.group(1);
-            break;
-          }
-        }
-      }
-      
-      // Create enhanced message for list
-      final enhancedMessage = widgetInfo != null 
-        ? '$mainMessage (Widget: $widgetInfo)'
-        : mainMessage;
-      
-      // Log with full details
-      _addLog(
-        LogLevel.warning,
-        enhancedMessage,
-        error: null,
-        stackTrace: fullError, // This now contains the complete console output
-      );
-    } else {
-      // Other errors
-      _addLog(
-        LogLevel.error,
-        'Flutter Error: $mainMessage',
-        error: null,
-        stackTrace: fullError,
-      );
-    }
-  }
   
   // Setup Flutter error handlers to capture all errors
   void _setupErrorHandlers() {
     if (!kReleaseMode) {
-      // Capture Flutter framework errors
+      // 1. Capture Flutter framework errors (synchronous)
       FlutterError.onError = (FlutterErrorDetails details) {
+        // Build comprehensive error information
+        final String fullErrorInfo = _buildErrorInfo(details);
         final String mainMessage = details.exceptionAsString();
         
-        // For RenderFlex overflow and other rendering errors
-        if (mainMessage.contains('RenderFlex overflowed')) {
-          // Start capturing the detailed output
-          _overflowBuffer.clear();
-          _isCapturingOverflow = true;
-          
-          // Cancel any existing timer
-          _overflowCaptureTimer?.cancel();
-          
-          // Present the error (this will trigger detailed output via debugPrint)
-          FlutterError.presentError(details);
-          
-          // Stop capturing after a delay and process the output
-          _overflowCaptureTimer = Timer(const Duration(milliseconds: 500), () {
-            _isCapturingOverflow = false;
-            
-            String capturedOutput = _overflowBuffer.toString();
-            
-            // If we captured the detailed output, use it
-            if (capturedOutput.contains('The overflowing RenderFlex has an orientation of') ||
-                capturedOutput.contains('The edge of the RenderFlex that is overflowing')) {
-              // We got the full output with details
-              _addLog(
-                LogLevel.warning,
-                mainMessage,
-                error: null,
-                stackTrace: capturedOutput,
-              );
-            } else {
-              // Fallback: build what we can from the details
-              final StringBuffer fallbackBuffer = StringBuffer();
-              fallbackBuffer.writeln('══╡ EXCEPTION CAUGHT BY RENDERING LIBRARY ╞═══════════════════════════════════════════════════');
-              fallbackBuffer.writeln('The following assertion was thrown during layout:');
-              fallbackBuffer.writeln(mainMessage);
-              fallbackBuffer.writeln('');
-              
-              // Add diagnostic information if available
-              if (details.informationCollector != null) {
-                final information = <DiagnosticsNode>[];
-                details.informationCollector!().forEach(information.add);
-                
-                for (final node in information) {
-                  final nodeStr = node.toStringDeep(
-                    prefixLineOne: '',
-                    prefixOtherLines: '  ',
-                  );
-                  if (nodeStr.isNotEmpty) {
-                    fallbackBuffer.writeln(nodeStr);
-                  }
-                }
-              }
-              
-              fallbackBuffer.writeln('\nTo inspect this widget in Flutter Inspector, select it and use the overflow indicator.');
-              fallbackBuffer.writeln('═' * 100);
-              
-              _addLog(
-                LogLevel.warning,
-                mainMessage,
-                error: null,
-                stackTrace: fallbackBuffer.toString(),
-              );
-            }
-            
-            _overflowBuffer.clear();
-          });
-          
-          return; // Don't process further since we're handling it async
-        } else if (mainMessage.contains('RenderBox') ||
-                   details.library == 'rendering library') {
-          // Present and handle other rendering errors normally
-          FlutterError.presentError(details);
-          
-          // Build the full error message manually
-          final StringBuffer fullErrorBuffer = StringBuffer();
-          
-          // Add header
-          fullErrorBuffer.writeln('══╡ EXCEPTION CAUGHT BY ${details.library?.toUpperCase() ?? "RENDERING LIBRARY"} ╞═══════════════════════════════════════════════════');
-          fullErrorBuffer.writeln('The following assertion was thrown${details.context != null ? " ${details.context}" : " during layout"}:');
-          fullErrorBuffer.writeln(mainMessage);
-          fullErrorBuffer.writeln('');
-          
-          // Collect diagnostic information
-          if (details.informationCollector != null) {
-            final information = <DiagnosticsNode>[];
-            details.informationCollector!().forEach(information.add);
-            
-            for (final DiagnosticsNode node in information) {
-              // Get the string representation of each diagnostic node
-              final String nodeString = node.toStringDeep(
-                prefixLineOne: '',
-                prefixOtherLines: '',
-              );
-              if (nodeString.isNotEmpty && !nodeString.contains('null')) {
-                fullErrorBuffer.writeln(nodeString);
-              }
-            }
-          }
-          
-          String fullDetails = fullErrorBuffer.toString();
-          
-          // Add stack trace if needed
-          if (fullDetails.isEmpty || fullDetails.trim() == mainMessage) {
-            // Fallback: build basic error info
-            final StringBuffer buffer = StringBuffer();
-            buffer.writeln('══╡ EXCEPTION CAUGHT BY RENDERING LIBRARY ╞═══════════════════════════════════════════════════');
-            buffer.writeln('The following assertion was thrown during layout:');
-            buffer.writeln(mainMessage);
-            buffer.writeln('');
-            buffer.writeln('(Full details not available - check console output)');
-            buffer.writeln('═' * 100);
-            fullDetails = buffer.toString();
-          }
-          
-          // Extract widget info for display
-          String? widgetInfo = 'Column'; // Default for our test case
-          final lines = fullDetails.split('\n');
-          for (final line in lines) {
-            if (line.contains('Widget:') || line.contains('widget was:')) {
-              final match = RegExp(r'(\w+)[\s:<]').firstMatch(line);
-              if (match != null) {
-                widgetInfo = match.group(1);
-                break;
-              }
-            }
-          }
-          
-          // Create enhanced message
-          final enhancedMessage = '$mainMessage${widgetInfo != null ? " (Widget: $widgetInfo)" : ""}';
-          
-          // Log with the manually built details
-          _addLog(
-            LogLevel.warning,
-            enhancedMessage,
-            error: null,
-            stackTrace: fullDetails,
-          );
-        } else {
-          // For other errors
-          error(
-            'Flutter Error: $mainMessage',
-            error: details.exception.toString(),
-            stackTrace: details.stack?.toString(),
-          );
+        // Determine log level based on error type
+        LogLevel level = LogLevel.error;
+        if (mainMessage.contains('RenderFlex overflowed') || 
+            mainMessage.contains('RenderBox')) {
+          level = LogLevel.warning;
         }
+        
+        // Log the error with full details
+        _addLog(
+          level,
+          _formatErrorMessage(mainMessage, details),
+          error: null,
+          stackTrace: fullErrorInfo,
+        );
+        
+        // Still present the error for console output
+        FlutterError.presentError(details);
       };
       
-      // Capture uncaught async errors
+      // 2. Use PlatformDispatcher for comprehensive error capture (async and uncaught)
       PlatformDispatcher.instance.onError = (error, stack) {
+        // Log uncaught errors
         this.error(
           'Uncaught Error',
           error: error.toString(),
           stackTrace: stack.toString(),
         );
+        
+        // Return true to indicate we've handled the error
         return true;
       };
     }
   }
   
-  // Buffer for capturing overflow error details
-  final StringBuffer _overflowBuffer = StringBuffer();
-  bool _isCapturingOverflow = false;
-  Timer? _overflowCaptureTimer;
+  // Helper method to build comprehensive error information
+  String _buildErrorInfo(FlutterErrorDetails details) {
+    final StringBuffer buffer = StringBuffer();
+    
+    // 1. Start with Flutter's formatted error message
+    buffer.writeln(details.toString());
+    
+    // 2. Add diagnostic information if available
+    if (details.informationCollector != null) {
+      buffer.writeln('\n═══ Additional Diagnostic Information ═══');
+      final information = <DiagnosticsNode>[];
+      details.informationCollector!().forEach(information.add);
+      
+      for (final node in information) {
+        // Get comprehensive diagnostic info
+        final String nodeStr = node.toStringDeep(
+          prefixLineOne: '',
+          prefixOtherLines: '  ',
+          minLevel: DiagnosticLevel.debug, // Get more detailed info
+        );
+        if (nodeStr.isNotEmpty && !nodeStr.contains('null')) {
+          buffer.writeln(nodeStr);
+        }
+      }
+    }
+    
+    // 3. Add stack trace if different from diagnostic info
+    if (details.stack != null && !buffer.toString().contains(details.stack.toString())) {
+      buffer.writeln('\n═══ Stack Trace ═══');
+      buffer.writeln(details.stack);
+    }
+    
+    return buffer.toString();
+  }
+  
+  // Helper method to format error message for display
+  String _formatErrorMessage(String mainMessage, FlutterErrorDetails details) {
+    // Extract key information for the list view
+    if (mainMessage.contains('RenderFlex overflowed')) {
+      // Try to extract widget info from details
+      String widgetInfo = '';
+      if (details.context != null) {
+        widgetInfo = ' (${details.context})';
+      }
+      return mainMessage + widgetInfo;
+    }
+    
+    // For other errors, include library info if available
+    if (details.library != null) {
+      return '[$details.library] $mainMessage';
+    }
+    
+    return mainMessage;
+  }
   
   // Intercept print statements - this is actually handled by the main Zone
   void _interceptPrint() {
     // Print interception is handled by the Zone in main()
-    // Additionally, we capture overflow details when needed
     // This method is kept for compatibility
   }
   
@@ -425,41 +307,20 @@ class DevLogger {
   // Setup framework logging capture
   void _setupFrameworkLogging() {
     if (!kReleaseMode) {
-      // Store the original debugPrintSynchronously function
-      final originalDebugPrintSync = debugPrintSynchronously;
-      
-      // Override debugPrintSynchronously to capture all Flutter framework output
-      debugPrintSynchronously = (String? message, {int? wrapWidth}) {
+      // Override debugPrint to capture all output including overflow errors
+      debugPrint = (String? message, {int? wrapWidth}) {
         if (message != null) {
-          // Check if we're capturing overflow details
-          if (_isCapturingOverflow) {
-            _overflowBuffer.writeln(message);
-          }
-          
           // Check if this is part of a Flutter framework error output
           if (message.contains('══╡ EXCEPTION CAUGHT BY') || 
               _flutterWarningBuffer.isNotEmpty) {
             // This is part of a framework error, buffer it
             _handleFlutterWarning(LogLevel.warning, message);
-          }
-        }
-        // Still print to console
-        originalDebugPrintSync(message, wrapWidth: wrapWidth);
-      };
-      
-      // Also capture debugPrint output
-      debugPrint = (String? message, {int? wrapWidth}) {
-        if (message != null) {
-          // Check if we're capturing overflow details
-          if (_isCapturingOverflow) {
-            _overflowBuffer.writeln(message);
-          } else if (!message.contains('══╡ EXCEPTION CAUGHT BY') && 
-                     _flutterWarningBuffer.isEmpty) {
-            // Normal debug print (only add if not capturing overflow to avoid duplicates)
+          } else {
+            // Normal debug print
             _addLog(LogLevel.debug, message);
           }
         }
-        // Use our overridden debugPrintSynchronously
+        // Still print to console using the original function
         debugPrintSynchronously(message, wrapWidth: wrapWidth);
       };
     }
