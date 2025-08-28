@@ -46,3 +46,5 @@ packages/*/pubspec.yaml.bak
 
 # Build artifacts that might change
 **/build/unit_test_assets/NOTICES.Z
+
+CLAUDE.md
