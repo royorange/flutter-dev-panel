@@ -172,23 +172,22 @@ class DevLogger {
     if (!kReleaseMode) {
       // 1. Capture Flutter framework errors (synchronous)
       FlutterError.onError = (FlutterErrorDetails details) {
-        // Build comprehensive error information
-        final String fullErrorInfo = _buildErrorInfo(details);
+        // Use Flutter's built-in toString() which provides the complete formatted error
+        final String fullErrorDetails = details.toString();
         final String mainMessage = details.exceptionAsString();
         
         // Determine log level based on error type
         LogLevel level = LogLevel.error;
-        if (mainMessage.contains('RenderFlex overflowed') || 
-            mainMessage.contains('RenderBox')) {
+        if (mainMessage.contains('RenderFlex overflowed')) {
           level = LogLevel.warning;
         }
         
-        // Log the error with full details
+        // Log the error with the complete formatted details
         _addLog(
           level,
-          _formatErrorMessage(mainMessage, details),
+          mainMessage,
           error: null,
-          stackTrace: fullErrorInfo,
+          stackTrace: fullErrorDetails,
         );
         
         // Still present the error for console output
@@ -210,117 +209,6 @@ class DevLogger {
     }
   }
   
-  // Helper method to build comprehensive error information
-  String _buildErrorInfo(FlutterErrorDetails details) {
-    final StringBuffer buffer = StringBuffer();
-    final String mainMessage = details.exceptionAsString();
-    
-    // For RenderFlex overflow errors, build the complete error message manually
-    if (mainMessage.contains('RenderFlex overflowed')) {
-      buffer.writeln('══╡ EXCEPTION CAUGHT BY RENDERING LIBRARY ╞═══════════════════════════════════════════════════════');
-      buffer.writeln('The following assertion was thrown during layout:');
-      buffer.writeln(mainMessage);
-      buffer.writeln('');
-      
-      // Try to extract widget and file information
-      if (details.informationCollector != null) {
-        final information = <DiagnosticsNode>[];
-        details.informationCollector!().forEach(information.add);
-        
-        // Look for widget information
-        for (final node in information) {
-          final String nodeStr = node.toString();
-          if (nodeStr.contains('The relevant error-causing widget was')) {
-            buffer.writeln('The relevant error-causing widget was:');
-            // Get the next node which should be the widget info
-            continue;
-          } else if (nodeStr.contains('Column') || nodeStr.contains('Row') || nodeStr.contains('file:///')) {
-            buffer.writeln('  $nodeStr');
-            if (nodeStr.contains('file:///')) {
-              buffer.writeln('');
-              buffer.writeln('To inspect this widget in Flutter DevTools, visit:');
-              buffer.writeln('[DevTools URL would be here in debug mode]');
-              buffer.writeln('');
-            }
-          }
-        }
-        
-        // Try to extract RenderFlex details
-        buffer.writeln('The overflowing RenderFlex has an orientation of Axis.vertical.');
-        buffer.writeln('The edge of the RenderFlex that is overflowing has been marked in the rendering with a yellow and');
-        buffer.writeln('black striped pattern. This is usually caused by the contents being too big for the RenderFlex.');
-        buffer.writeln('');
-        buffer.writeln('Consider applying a flex factor (e.g. using an Expanded widget) to force the children of the');
-        buffer.writeln('RenderFlex to fit within the available space instead of being sized to their natural size.');
-        buffer.writeln('This is considered an error condition because it indicates that there is content that cannot be');
-        buffer.writeln('seen. If the content is legitimately bigger than the available space, consider clipping it with a');
-        buffer.writeln('ClipRect widget before putting it in the flex, or using a scrollable container rather than a Flex,');
-        buffer.writeln('like a ListView.');
-        buffer.writeln('');
-        
-        // Add any additional diagnostic nodes
-        for (final node in information) {
-          final String deepStr = node.toStringDeep(
-            prefixLineOne: '',
-            prefixOtherLines: '  ',
-            minLevel: DiagnosticLevel.info,
-          );
-          if (deepStr.contains('RenderFlex') || deepStr.contains('constraints:') || deepStr.contains('size:')) {
-            buffer.writeln('The specific RenderFlex in question is:');
-            buffer.writeln(deepStr);
-            break;
-          }
-        }
-      }
-      
-      buffer.writeln('◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤');
-      buffer.writeln('════════════════════════════════════════════════════════════════════════════════════════════════════');
-    } else {
-      // For other errors, use the default formatting
-      buffer.writeln(details.toString());
-      
-      // Add diagnostic information if available
-      if (details.informationCollector != null) {
-        buffer.writeln('\n═══ Additional Diagnostic Information ═══');
-        final information = <DiagnosticsNode>[];
-        details.informationCollector!().forEach(information.add);
-        
-        for (final node in information) {
-          final String nodeStr = node.toStringDeep(
-            prefixLineOne: '',
-            prefixOtherLines: '  ',
-            minLevel: DiagnosticLevel.debug,
-          );
-          if (nodeStr.isNotEmpty && !nodeStr.contains('null')) {
-            buffer.writeln(nodeStr);
-          }
-        }
-      }
-      
-      // Add stack trace if different from diagnostic info
-      if (details.stack != null && !buffer.toString().contains(details.stack.toString())) {
-        buffer.writeln('\n═══ Stack Trace ═══');
-        buffer.writeln(details.stack);
-      }
-    }
-    
-    return buffer.toString();
-  }
-  
-  // Helper method to format error message for display
-  String _formatErrorMessage(String mainMessage, FlutterErrorDetails details) {
-    // For RenderFlex overflow, just use the main message
-    if (mainMessage.contains('RenderFlex overflowed')) {
-      return mainMessage;
-    }
-    
-    // For other errors, include library info if available
-    if (details.library != null) {
-      return '[$details.library] $mainMessage';
-    }
-    
-    return mainMessage;
-  }
   
   // Intercept print statements - this is actually handled by the main Zone
   void _interceptPrint() {
@@ -592,6 +480,29 @@ class DevLogger {
   
   /// Handle Flutter framework warnings (RenderFlex overflow, etc.)
   void _handleFlutterWarning(LogLevel level, String message, {String? error, String? stackTrace}) {
+    // If we have a stackTrace passed in (from FlutterError.onError), 
+    // use it directly instead of buffering
+    if (stackTrace != null && stackTrace.isNotEmpty) {
+      // Create log entry directly with the provided stackTrace
+      final entry = LogEntry(
+        timestamp: DateTime.now(),
+        level: level,
+        message: message,
+        error: error,
+        stackTrace: stackTrace,
+      );
+      
+      _logs.addLast(entry);
+      if (_logs.length > _config.maxLogs) {
+        _logs.removeFirst();
+      }
+      
+      _logController.add(entry);
+      MonitoringDataProvider.instance.triggerUpdate();
+      return;
+    }
+    
+    // Original buffering logic for warnings from debugPrint
     // Start or continue buffering
     _flutterWarningStartTime ??= DateTime.now();
     _flutterWarningBuffer.add(message);

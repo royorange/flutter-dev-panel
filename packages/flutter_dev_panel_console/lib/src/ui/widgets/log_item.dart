@@ -298,10 +298,11 @@ class LogDetailSheet extends StatelessWidget {
                     const SizedBox(height: 16),
                     _buildSection(
                       context,
-                      title: _isLoggerFormattedOutput(log.stackTrace!) ? 'Full Output' : 'StackTrace',
+                      title: _getStackTraceTitle(log.stackTrace!),
                       content: log.stackTrace!,
-                      icon: _isLoggerFormattedOutput(log.stackTrace!) ? Icons.format_align_left : Icons.layers,
+                      icon: _getStackTraceIcon(log.stackTrace!),
                       isMonospace: true,
+                      isFlutterError: _isFlutterError(log.stackTrace!),
                     ),
                   ],
                 ],
@@ -320,8 +321,25 @@ class LogDetailSheet extends StatelessWidget {
     required IconData icon,
     bool isError = false,
     bool isMonospace = false,
+    bool isFlutterError = false,
   }) {
     final theme = Theme.of(context);
+
+    // For Flutter errors, we can highlight important parts
+    Widget contentWidget;
+    if (isFlutterError && content.contains('EXCEPTION CAUGHT BY')) {
+      contentWidget = _buildHighlightedErrorContent(context, content);
+    } else {
+      contentWidget = SelectableText(
+        content,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          fontFamily: isMonospace ? 'Courier New, monospace' : null,
+          color: isError ? Colors.red : null,
+          fontSize: isMonospace ? 13 : null,
+          height: isMonospace ? 1.4 : null,
+        ),
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -353,27 +371,121 @@ class LogDetailSheet extends StatelessWidget {
                   : theme.dividerColor.withValues(alpha: 0.2),
             ),
           ),
-          child: SelectableText(
-            content,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontFamily: isMonospace ? 'Courier New, monospace' : null,
-              color: isError ? Colors.red : null,
-              fontSize: isMonospace ? 13 : null,
-              height: isMonospace ? 1.4 : null,
-            ),
-          ),
+          child: contentWidget,
         ),
       ],
     );
   }
 
+  Widget _buildHighlightedErrorContent(BuildContext context, String content) {
+    final theme = Theme.of(context);
+    final List<TextSpan> spans = [];
+    final lines = content.split('\n');
+    
+    for (final line in lines) {
+      TextStyle style;
+      
+      // Simple and effective highlighting rules
+      if (line.contains(':') && !line.contains('://')) {
+        // Lines with colons (property lines) - make the label bold
+        final colonIndex = line.indexOf(':');
+        final label = line.substring(0, colonIndex + 1);
+        final value = line.substring(colonIndex + 1);
+        
+        spans.add(TextSpan(
+          text: label,
+          style: const TextStyle(
+            fontFamily: 'Courier New, monospace',
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+          ),
+        ));
+        spans.add(TextSpan(
+          text: value,
+          style: const TextStyle(
+            fontFamily: 'Courier New, monospace',
+            fontSize: 13,
+          ),
+        ));
+        spans.add(const TextSpan(text: '\n'));
+      } else if (line.contains('file:///') || line.contains('http://')) {
+        // URLs - underlined
+        style = const TextStyle(
+          fontFamily: 'Courier New, monospace',
+          decoration: TextDecoration.underline,
+          fontSize: 13,
+        );
+        spans.add(TextSpan(text: line, style: style));
+        spans.add(const TextSpan(text: '\n'));
+      } else if (RegExp(r'^[◢◤═─]+$').hasMatch(line.trim())) {
+        // Decorative lines - dimmed
+        style = TextStyle(
+          fontFamily: 'Courier New, monospace',
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+          fontSize: 13,
+        );
+        spans.add(TextSpan(text: line, style: style));
+        spans.add(const TextSpan(text: '\n'));
+      } else {
+        // Everything else - normal monospace
+        style = const TextStyle(
+          fontFamily: 'Courier New, monospace',
+          fontSize: 13,
+          height: 1.4,
+        );
+        spans.add(TextSpan(text: line, style: style));
+        spans.add(const TextSpan(text: '\n'));
+      }
+    }
+    
+    return SelectableText.rich(
+      TextSpan(children: spans),
+    );
+  }
+
+  String _getStackTraceTitle(String stackTrace) {
+    // Simple and clear: only distinguish real stack traces
+    if (_containsStackTrace(stackTrace)) {
+      return 'StackTrace';
+    }
+    // Everything else is just "Details"
+    return 'Details';
+  }
+
+  IconData _getStackTraceIcon(String stackTrace) {
+    if (_containsStackTrace(stackTrace)) {
+      return Icons.layers;
+    } else if (_isFlutterError(stackTrace)) {
+      return Icons.error_outline;
+    } else if (_isLoggerFormattedOutput(stackTrace)) {
+      return Icons.format_align_left;
+    }
+    return Icons.info_outline;
+  }
+
+  bool _containsStackTrace(String content) {
+    // Check for actual stack trace patterns
+    return content.contains('#0 ') ||
+           content.contains('at ') ||
+           content.contains('.dart:') && content.contains('(') ||
+           RegExp(r'^\s+at\s+', multiLine: true).hasMatch(content);
+  }
+
+  bool _isFlutterError(String content) {
+    // Only check for Flutter-specific error markers, not stack traces
+    return content.contains('EXCEPTION CAUGHT BY') ||
+           content.contains('The following assertion was thrown') ||
+           content.contains('RenderFlex overflowed');
+  }
+
   /// Check if the content is Logger package formatted output
   bool _isLoggerFormattedOutput(String content) {
-    return content.contains('┌') || 
-           content.contains('├') || 
-           content.contains('│') || 
-           content.contains('└') ||
-           content.contains('┄');
+    // More strict check - must have multiple Logger symbols, not just one
+    int loggerSymbolCount = 0;
+    if (content.contains('┌')) loggerSymbolCount++;
+    if (content.contains('├')) loggerSymbolCount++;
+    if (content.contains('└')) loggerSymbolCount++;
+    return loggerSymbolCount >= 2 && content.contains('│');
   }
 
   void _copyToClipboard(BuildContext context) {
