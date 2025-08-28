@@ -744,6 +744,60 @@ class _MyHomePageState extends State<MyHomePage>
                           foregroundColor: Colors.white,
                         ),
                       ),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          // Trigger RenderFlex overflow warning
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Overflow Test'),
+                              content: SizedBox(
+                                height: 100, // Constrained height
+                                child: Column(
+                                  children: [
+                                    const Text('This will cause overflow:'),
+                                    // These containers will overflow the 100px height
+                                    Container(
+                                      height: 50,
+                                      color: Colors.red.withValues(alpha: 0.3),
+                                      child: const Center(child: Text('Box 1: 50px')),
+                                    ),
+                                    Container(
+                                      height: 50,
+                                      color: Colors.blue.withValues(alpha: 0.3),
+                                      child: const Center(child: Text('Box 2: 50px')),
+                                    ),
+                                    Container(
+                                      height: 50,
+                                      color: Colors.green.withValues(alpha: 0.3),
+                                      child: const Center(child: Text('Box 3: 50px - Overflow!')),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('Close'),
+                                ),
+                              ],
+                            ),
+                          );
+                          
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Check Console for RenderFlex overflow warning'),
+                              duration: Duration(seconds: 3),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.broken_image, size: 16),
+                        label: const Text('Test Overflow'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.amber.shade700,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
                     ],
                   ),
                 ],
