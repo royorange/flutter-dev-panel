@@ -293,14 +293,14 @@ class LogDetailSheet extends StatelessWidget {
                     ),
                   ],
 
-                  // 堆栈跟踪
+                  // 堆栈跟踪或 Logger 格式化输出
                   if (log.stackTrace != null) ...[
                     const SizedBox(height: 16),
                     _buildSection(
                       context,
-                      title: 'StackTrace',
+                      title: _isLoggerFormattedOutput(log.stackTrace!) ? 'Full Output' : 'StackTrace',
                       content: log.stackTrace!,
-                      icon: Icons.layers,
+                      icon: _isLoggerFormattedOutput(log.stackTrace!) ? Icons.format_align_left : Icons.layers,
                       isMonospace: true,
                     ),
                   ],
@@ -356,13 +356,24 @@ class LogDetailSheet extends StatelessWidget {
           child: SelectableText(
             content,
             style: theme.textTheme.bodyMedium?.copyWith(
-              fontFamily: isMonospace ? 'monospace' : null,
+              fontFamily: isMonospace ? 'Courier New, monospace' : null,
               color: isError ? Colors.red : null,
+              fontSize: isMonospace ? 13 : null,
+              height: isMonospace ? 1.4 : null,
             ),
           ),
         ),
       ],
     );
+  }
+
+  /// Check if the content is Logger package formatted output
+  bool _isLoggerFormattedOutput(String content) {
+    return content.contains('┌') || 
+           content.contains('├') || 
+           content.contains('│') || 
+           content.contains('└') ||
+           content.contains('┄');
   }
 
   void _copyToClipboard(BuildContext context) {

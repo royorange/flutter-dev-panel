@@ -467,6 +467,11 @@ class DevLogger {
     return LogLevel.info;
   }
   
+  // Compiled regex for ANSI escape sequences - reused for performance
+  static final _ansiCodePattern = RegExp(
+    r'(?:\x1B\[[0-9;]*m|\[(?:38;5;)?\d+(?:;\d+)*m)',
+  );
+  
   /// Flush the Logger buffer as a single log entry
   /// 
   /// This method is critical for handling Logger package's multi-line output.
@@ -476,63 +481,94 @@ class DevLogger {
   /// This method:
   /// 1. Combines all buffered lines into a single log entry
   /// 2. Detects the appropriate log level from emoji/text indicators
-  /// 3. Cleans up box-drawing characters and ANSI color codes
-  /// 4. Triggers FAB update via MonitoringDataProvider
+  /// 3. Extracts the core message for list display
+  /// 4. Preserves full content in stackTrace for detail view
+  /// 5. Triggers FAB update via MonitoringDataProvider
   /// 
   /// IMPORTANT: Must call MonitoringDataProvider.instance.triggerUpdate() 
   /// after adding the log, otherwise FAB won't update for Logger package logs.
   void _flushLoggerBuffer() {
     if (_loggerBuffer.isEmpty) return;
     
-    // Combine all lines
-    final combinedMessage = _loggerBuffer.join('\n');
+    // Combine all lines for full content
+    final fullMessage = _loggerBuffer.join('\n');
     
     // Detect log level from the combined message
-    // 使用更健壮的检测策略
-    LogLevel detectedLevel = _detectLogLevel(combinedMessage);
+    LogLevel detectedLevel = _detectLogLevel(fullMessage);
     
-    // Clean up the message for display
-    String cleanMessage = combinedMessage
-        // Remove box drawing characters but keep emojis
-        .replaceAll(RegExp(r'[┌─├│└╟╚╔╗╝═║╠┄]'), '')
-        // Remove ANSI escape sequences (color codes) but preserve the content
-        .replaceAll(RegExp(r'\x1B\[[0-9;]*m'), '')
-        .replaceAll(RegExp(r'\[38;5;\d+m'), '')
-        .replaceAll(RegExp(r'\[\d+m'), '')
-        .replaceAll('[0m', '')
-        .split('\n')
-        .map((line) => line.trim())
-        .where((line) => line.isNotEmpty)
-        .join('\n');
+    // Extract the core message for list display
+    String? coreMessage;
     
-    // Extract main message and stack trace if present
-    String? mainMessage;
-    String? stackTrace;
-    
-    final lines = cleanMessage.split('\n');
-    if (lines.isNotEmpty) {
-      // First line is usually the main message
-      mainMessage = lines[0];
+    // Find the line with emoji or actual log content (not stack trace or timestamps)
+    for (final line in _loggerBuffer) {
+      // Remove box drawing characters and ANSI codes for checking
+      final cleanLine = line
+          .replaceAll(RegExp(r'[┌─├│└╟╚╔╗╝═║╠┄]'), '')
+          .replaceAll(_ansiCodePattern, '')
+          .trim();
       
-      // If there are more lines and they look like stack trace, treat them as such
-      if (lines.length > 1) {
-        final stackLines = lines.sublist(1);
-        if (stackLines.any((line) => line.contains('#') || line.contains('package:'))) {
-          stackTrace = stackLines.join('\n');
-        } else {
-          // Not a stack trace, include in main message
-          mainMessage = cleanMessage;
+      if (cleanLine.isEmpty) continue;
+      
+      // Skip stack trace lines
+      if (cleanLine.startsWith('#') || 
+          (cleanLine.contains('.dart:') && !cleanLine.contains(RegExp(r'[\u{1F300}-\u{1F9FF}]', unicode: true))) ||
+          (cleanLine.contains('package:') && !cleanLine.contains(RegExp(r'[\u{1F300}-\u{1F9FF}]', unicode: true)))) {
+        continue;
+      }
+      
+      // Skip timestamp lines (e.g., "16:49:04.562 (+0:00:01.083551)")
+      if (RegExp(r'^\d{2}:\d{2}:\d{2}\.\d+').hasMatch(cleanLine)) {
+        continue;
+      }
+      
+      // This line likely contains the actual log message
+      // Logger package messages often have emojis like 🐛, 💡, ⛔, etc.
+      if (cleanLine.contains(RegExp(r'[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]', unicode: true)) ||
+          (!cleanLine.startsWith('#') && cleanLine.length > 2)) {
+        coreMessage = cleanLine;
+        break;
+      }
+    }
+    
+    // If no core message found, use the first non-empty, non-decoration line
+    if (coreMessage == null || coreMessage.isEmpty) {
+      for (final line in _loggerBuffer) {
+        final cleanLine = line
+            .replaceAll(RegExp(r'[┌─├│└╟╚╔╗╝═║╠┄]'), '')
+            .replaceAll(_ansiCodePattern, '')
+            .trim();
+        if (cleanLine.isNotEmpty && !cleanLine.startsWith('#')) {
+          coreMessage = cleanLine;
+          break;
         }
       }
     }
     
+    // Fallback to cleaned full message if still no core message
+    if (coreMessage == null || coreMessage.isEmpty) {
+      coreMessage = fullMessage
+          .replaceAll(RegExp(r'[┌─├│└╟╚╔╗╝═║╠┄]'), '')
+          .replaceAll(_ansiCodePattern, '')
+          .split('\n')
+          .map((line) => line.trim())
+          .firstWhere((line) => line.isNotEmpty, orElse: () => 'Logger output');
+    }
+    
+    // Clean ANSI codes from full message while preserving box drawing characters
+    // Use a single comprehensive regex for better performance
+    final cleanedFullMessage = fullMessage.replaceAll(
+      RegExp(r'(?:\x1B\[[0-9;]*m|\[(?:38;5;)?\d+(?:;\d+)*m)'),
+      '',
+    );
+    
     // Create a single log entry
+    // Use core message for display in list, cleaned full content in stackTrace for detail view
     final entry = LogEntry(
       timestamp: _loggerBufferStartTime ?? DateTime.now(),
       level: detectedLevel,
-      message: mainMessage ?? cleanMessage,
+      message: coreMessage,
       error: null,
-      stackTrace: stackTrace,
+      stackTrace: cleanedFullMessage, // Store cleaned formatted output for detail view
     );
     
     _logs.addLast(entry);
