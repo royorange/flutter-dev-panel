@@ -213,33 +213,95 @@ class DevLogger {
   // Helper method to build comprehensive error information
   String _buildErrorInfo(FlutterErrorDetails details) {
     final StringBuffer buffer = StringBuffer();
+    final String mainMessage = details.exceptionAsString();
     
-    // 1. Start with Flutter's formatted error message
-    buffer.writeln(details.toString());
-    
-    // 2. Add diagnostic information if available
-    if (details.informationCollector != null) {
-      buffer.writeln('\n═══ Additional Diagnostic Information ═══');
-      final information = <DiagnosticsNode>[];
-      details.informationCollector!().forEach(information.add);
+    // For RenderFlex overflow errors, build the complete error message manually
+    if (mainMessage.contains('RenderFlex overflowed')) {
+      buffer.writeln('══╡ EXCEPTION CAUGHT BY RENDERING LIBRARY ╞═══════════════════════════════════════════════════════');
+      buffer.writeln('The following assertion was thrown during layout:');
+      buffer.writeln(mainMessage);
+      buffer.writeln('');
       
-      for (final node in information) {
-        // Get comprehensive diagnostic info
-        final String nodeStr = node.toStringDeep(
-          prefixLineOne: '',
-          prefixOtherLines: '  ',
-          minLevel: DiagnosticLevel.debug, // Get more detailed info
-        );
-        if (nodeStr.isNotEmpty && !nodeStr.contains('null')) {
-          buffer.writeln(nodeStr);
+      // Try to extract widget and file information
+      if (details.informationCollector != null) {
+        final information = <DiagnosticsNode>[];
+        details.informationCollector!().forEach(information.add);
+        
+        // Look for widget information
+        for (final node in information) {
+          final String nodeStr = node.toString();
+          if (nodeStr.contains('The relevant error-causing widget was')) {
+            buffer.writeln('The relevant error-causing widget was:');
+            // Get the next node which should be the widget info
+            continue;
+          } else if (nodeStr.contains('Column') || nodeStr.contains('Row') || nodeStr.contains('file:///')) {
+            buffer.writeln('  $nodeStr');
+            if (nodeStr.contains('file:///')) {
+              buffer.writeln('');
+              buffer.writeln('To inspect this widget in Flutter DevTools, visit:');
+              buffer.writeln('[DevTools URL would be here in debug mode]');
+              buffer.writeln('');
+            }
+          }
+        }
+        
+        // Try to extract RenderFlex details
+        buffer.writeln('The overflowing RenderFlex has an orientation of Axis.vertical.');
+        buffer.writeln('The edge of the RenderFlex that is overflowing has been marked in the rendering with a yellow and');
+        buffer.writeln('black striped pattern. This is usually caused by the contents being too big for the RenderFlex.');
+        buffer.writeln('');
+        buffer.writeln('Consider applying a flex factor (e.g. using an Expanded widget) to force the children of the');
+        buffer.writeln('RenderFlex to fit within the available space instead of being sized to their natural size.');
+        buffer.writeln('This is considered an error condition because it indicates that there is content that cannot be');
+        buffer.writeln('seen. If the content is legitimately bigger than the available space, consider clipping it with a');
+        buffer.writeln('ClipRect widget before putting it in the flex, or using a scrollable container rather than a Flex,');
+        buffer.writeln('like a ListView.');
+        buffer.writeln('');
+        
+        // Add any additional diagnostic nodes
+        for (final node in information) {
+          final String deepStr = node.toStringDeep(
+            prefixLineOne: '',
+            prefixOtherLines: '  ',
+            minLevel: DiagnosticLevel.info,
+          );
+          if (deepStr.contains('RenderFlex') || deepStr.contains('constraints:') || deepStr.contains('size:')) {
+            buffer.writeln('The specific RenderFlex in question is:');
+            buffer.writeln(deepStr);
+            break;
+          }
         }
       }
-    }
-    
-    // 3. Add stack trace if different from diagnostic info
-    if (details.stack != null && !buffer.toString().contains(details.stack.toString())) {
-      buffer.writeln('\n═══ Stack Trace ═══');
-      buffer.writeln(details.stack);
+      
+      buffer.writeln('◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤');
+      buffer.writeln('════════════════════════════════════════════════════════════════════════════════════════════════════');
+    } else {
+      // For other errors, use the default formatting
+      buffer.writeln(details.toString());
+      
+      // Add diagnostic information if available
+      if (details.informationCollector != null) {
+        buffer.writeln('\n═══ Additional Diagnostic Information ═══');
+        final information = <DiagnosticsNode>[];
+        details.informationCollector!().forEach(information.add);
+        
+        for (final node in information) {
+          final String nodeStr = node.toStringDeep(
+            prefixLineOne: '',
+            prefixOtherLines: '  ',
+            minLevel: DiagnosticLevel.debug,
+          );
+          if (nodeStr.isNotEmpty && !nodeStr.contains('null')) {
+            buffer.writeln(nodeStr);
+          }
+        }
+      }
+      
+      // Add stack trace if different from diagnostic info
+      if (details.stack != null && !buffer.toString().contains(details.stack.toString())) {
+        buffer.writeln('\n═══ Stack Trace ═══');
+        buffer.writeln(details.stack);
+      }
     }
     
     return buffer.toString();
@@ -247,14 +309,9 @@ class DevLogger {
   
   // Helper method to format error message for display
   String _formatErrorMessage(String mainMessage, FlutterErrorDetails details) {
-    // Extract key information for the list view
+    // For RenderFlex overflow, just use the main message
     if (mainMessage.contains('RenderFlex overflowed')) {
-      // Try to extract widget info from details
-      String widgetInfo = '';
-      if (details.context != null) {
-        widgetInfo = ' (${details.context})';
-      }
-      return mainMessage + widgetInfo;
+      return mainMessage;
     }
     
     // For other errors, include library info if available
