@@ -17,7 +17,7 @@ class _ConsolePageState extends State<ConsolePage> {
   final _searchFocusNode = FocusNode();
   final _searchController = TextEditingController();
   bool _isSearchFocused = false;
-  
+
   @override
   void initState() {
     super.initState();
@@ -29,7 +29,7 @@ class _ConsolePageState extends State<ConsolePage> {
         });
       }
     });
-    
+
     // 页面打开时如果启用了自动滚动，延迟滚动到底部
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (provider.autoScroll && provider.scrollController.hasClients) {
@@ -39,7 +39,7 @@ class _ConsolePageState extends State<ConsolePage> {
       }
     });
   }
-  
+
   @override
   void dispose() {
     provider.dispose();
@@ -47,7 +47,7 @@ class _ConsolePageState extends State<ConsolePage> {
     _searchController.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -61,15 +61,15 @@ class _ConsolePageState extends State<ConsolePage> {
           builder: (context, constraints) {
             // Check available height
             final hasEnoughSpace = constraints.maxHeight > 200;
-            
+
             return Column(
               children: [
                 // Top toolbar - always visible
                 _buildToolbar(context),
-                
+
                 // Filter bar - only show when there's enough space
                 if (hasEnoughSpace) LogFilterBar(provider: provider),
-                
+
                 // Log list - use Expanded to fill all remaining space
                 Expanded(
                   child: ListenableBuilder(
@@ -78,16 +78,17 @@ class _ConsolePageState extends State<ConsolePage> {
                       if (provider.filteredLogs.isEmpty) {
                         return _buildEmptyState(context);
                       }
-                      
+
                       // 在构建 ListView 后触发自动滚动
                       WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (provider.autoScroll && provider.scrollController.hasClients) {
+                        if (provider.autoScroll &&
+                            provider.scrollController.hasClients) {
                           provider.scrollController.jumpTo(
                             provider.scrollController.position.maxScrollExtent,
                           );
                         }
                       });
-                      
+
                       return ListView.builder(
                         controller: provider.scrollController,
                         padding: const EdgeInsets.only(bottom: 8),
@@ -95,7 +96,8 @@ class _ConsolePageState extends State<ConsolePage> {
                         itemBuilder: (context, index) {
                           final log = provider.filteredLogs[index];
                           return LogItem(
-                            key: ValueKey('${log.timestamp.millisecondsSinceEpoch}_$index'),
+                            key: ValueKey(
+                                '${log.timestamp.millisecondsSinceEpoch}_$index'),
                             log: log,
                             provider: provider,
                           );
@@ -104,7 +106,7 @@ class _ConsolePageState extends State<ConsolePage> {
                     },
                   ),
                 ),
-                
+
                 // Bottom status bar - only show when there's enough space
                 if (hasEnoughSpace) _buildStatusBar(context),
               ],
@@ -114,11 +116,11 @@ class _ConsolePageState extends State<ConsolePage> {
       ),
     );
   }
-  
+
   /// Build top toolbar
   Widget _buildToolbar(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -140,8 +142,8 @@ class _ConsolePageState extends State<ConsolePage> {
               decoration: BoxDecoration(
                 color: theme.colorScheme.surface,
                 border: Border.all(
-                  color: _isSearchFocused 
-                      ? theme.colorScheme.primary 
+                  color: _isSearchFocused
+                      ? theme.colorScheme.primary
                       : Colors.transparent,
                   width: _isSearchFocused ? 2 : 1,
                 ),
@@ -156,11 +158,12 @@ class _ConsolePageState extends State<ConsolePage> {
                       child: Icon(
                         Icons.search,
                         size: 18,
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.5),
                       ),
                     );
                   }
-                  
+
                   return Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -169,7 +172,8 @@ class _ConsolePageState extends State<ConsolePage> {
                         size: 18,
                         color: _isSearchFocused
                             ? theme.colorScheme.primary
-                            : theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                            : theme.colorScheme.onSurface
+                                .withValues(alpha: 0.5),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -184,7 +188,8 @@ class _ConsolePageState extends State<ConsolePage> {
                           decoration: InputDecoration(
                             hintText: 'Search logs...',
                             hintStyle: TextStyle(
-                              color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.3),
                             ),
                             filled: true,
                             fillColor: Colors.transparent,
@@ -208,7 +213,8 @@ class _ConsolePageState extends State<ConsolePage> {
                               icon: Icon(
                                 Icons.clear,
                                 size: 18,
-                                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                                color: theme.colorScheme.onSurface
+                                    .withValues(alpha: 0.5),
                               ),
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
@@ -227,9 +233,9 @@ class _ConsolePageState extends State<ConsolePage> {
               ),
             ),
           ),
-          
+
           const SizedBox(width: 8),
-          
+
           // Pause/Resume button
           ListenableBuilder(
             listenable: provider,
@@ -244,14 +250,14 @@ class _ConsolePageState extends State<ConsolePage> {
               );
             },
           ),
-          
+
           // Settings button
           IconButton(
             icon: const Icon(Icons.settings, size: 20),
             onPressed: () => _showLogConfigDialog(context),
             tooltip: 'Log capture settings',
           ),
-          
+
           // Clear button
           IconButton(
             icon: const Icon(Icons.clear_all, size: 20),
@@ -262,11 +268,11 @@ class _ConsolePageState extends State<ConsolePage> {
       ),
     );
   }
-  
+
   /// Build empty state view
   Widget _buildEmptyState(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -294,12 +300,12 @@ class _ConsolePageState extends State<ConsolePage> {
       ),
     );
   }
-  
+
   /// Build bottom status bar
   Widget _buildStatusBar(BuildContext context) {
     final theme = Theme.of(context);
     final bottomPadding = MediaQuery.of(context).padding.bottom;
-    
+
     return Container(
       constraints: const BoxConstraints(minHeight: 40),
       padding: EdgeInsets.only(
@@ -335,7 +341,8 @@ class _ConsolePageState extends State<ConsolePage> {
                         color: Colors.red,
                         icon: Icons.error_outline,
                       ),
-                      if (stats[LogLevel.error] != null && stats[LogLevel.error]! > 0)
+                      if (stats[LogLevel.error] != null &&
+                          stats[LogLevel.error]! > 0)
                         const SizedBox(width: 8),
                       _buildStatChip(
                         context,
@@ -343,7 +350,8 @@ class _ConsolePageState extends State<ConsolePage> {
                         color: Colors.orange,
                         icon: Icons.warning_amber,
                       ),
-                      if (stats[LogLevel.warning] != null && stats[LogLevel.warning]! > 0)
+                      if (stats[LogLevel.warning] != null &&
+                          stats[LogLevel.warning]! > 0)
                         const SizedBox(width: 8),
                       _buildStatChip(
                         context,
@@ -355,9 +363,9 @@ class _ConsolePageState extends State<ConsolePage> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(width: 16),
-              
+
               // Total log count
               Text(
                 'Total: ${provider.filteredLogs.length} / ${provider.logs.length}',
@@ -371,7 +379,7 @@ class _ConsolePageState extends State<ConsolePage> {
       ),
     );
   }
-  
+
   /// Build statistics chip
   Widget _buildStatChip(
     BuildContext context, {
@@ -382,7 +390,7 @@ class _ConsolePageState extends State<ConsolePage> {
     if (count == 0) {
       return const SizedBox.shrink();
     }
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -406,14 +414,15 @@ class _ConsolePageState extends State<ConsolePage> {
       ),
     );
   }
-  
+
   /// Show clear confirmation dialog
   void _showClearConfirmDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Clear Logs'),
-        content: const Text('Are you sure you want to clear all logs? This action cannot be undone.'),
+        content: const Text(
+            'Are you sure you want to clear all logs? This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -439,7 +448,7 @@ class _ConsolePageState extends State<ConsolePage> {
       ),
     );
   }
-  
+
   /// Show log configuration dialog
   void _showLogConfigDialog(BuildContext context) {
     showDialog(
@@ -448,7 +457,7 @@ class _ConsolePageState extends State<ConsolePage> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             final currentConfig = DevLogger.instance.config;
-            
+
             return AlertDialog(
               title: const Row(
                 children: [
@@ -479,9 +488,9 @@ class _ConsolePageState extends State<ConsolePage> {
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              
+
                               // Note: Errors are always captured automatically
-                              
+
                               // Auto scroll
                               _buildConfigSwitch(
                                 title: 'Auto Scroll',
@@ -492,25 +501,28 @@ class _ConsolePageState extends State<ConsolePage> {
                                   setDialogState(() {});
                                 },
                               ),
-                              
+
                               // Combine Logger output
                               _buildConfigSwitch(
                                 title: 'Optimize Logger Display',
-                                subtitle: 'Combine multi-line Logger package output',
+                                subtitle:
+                                    'Combine multi-line Logger package output',
                                 value: currentConfig.combineLoggerOutput,
                                 onChanged: (value) {
                                   DevLogger.instance.updateConfig(
-                                    currentConfig.copyWith(combineLoggerOutput: value),
+                                    currentConfig.copyWith(
+                                        combineLoggerOutput: value),
                                   );
                                   setDialogState(() {});
                                 },
                               ),
-                              
+
                               const Divider(height: 24),
-                              
+
                               // Max logs setting
                               ListTile(
-                                title: const Text('Maximum Logs', style: TextStyle(fontSize: 14)),
+                                title: const Text('Maximum Logs',
+                                    style: TextStyle(fontSize: 14)),
                                 subtitle: Text(
                                   'Current: ${currentConfig.maxLogs} logs',
                                   style: const TextStyle(fontSize: 12),
@@ -521,16 +533,22 @@ class _ConsolePageState extends State<ConsolePage> {
                                     value: currentConfig.maxLogs,
                                     isExpanded: true,
                                     items: const [
-                                      DropdownMenuItem(value: 100, child: Text('100')),
-                                      DropdownMenuItem(value: 500, child: Text('500')),
-                                      DropdownMenuItem(value: 1000, child: Text('1000')),
-                                      DropdownMenuItem(value: 2000, child: Text('2000')),
-                                      DropdownMenuItem(value: 5000, child: Text('5000')),
+                                      DropdownMenuItem(
+                                          value: 100, child: Text('100')),
+                                      DropdownMenuItem(
+                                          value: 500, child: Text('500')),
+                                      DropdownMenuItem(
+                                          value: 1000, child: Text('1000')),
+                                      DropdownMenuItem(
+                                          value: 2000, child: Text('2000')),
+                                      DropdownMenuItem(
+                                          value: 5000, child: Text('5000')),
                                     ],
                                     onChanged: (value) {
                                       if (value != null) {
                                         DevLogger.instance.updateConfig(
-                                          currentConfig.copyWith(maxLogs: value),
+                                          currentConfig.copyWith(
+                                              maxLogs: value),
                                         );
                                         setDialogState(() {});
                                       }
@@ -544,14 +562,17 @@ class _ConsolePageState extends State<ConsolePage> {
                           ),
                         ),
                       ),
-                      
+
                       const SizedBox(height: 12),
-                      
+
                       // Info about what gets captured
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primaryContainer
+                              .withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Column(
@@ -562,7 +583,9 @@ class _ConsolePageState extends State<ConsolePage> {
                                 Icon(
                                   Icons.info_outline,
                                   size: 16,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
@@ -570,7 +593,9 @@ class _ConsolePageState extends State<ConsolePage> {
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
                                   ),
                                 ),
                               ],
@@ -587,7 +612,9 @@ class _ConsolePageState extends State<ConsolePage> {
                               style: TextStyle(
                                 fontSize: 11,
                                 height: 1.4,
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
                               ),
                             ),
                           ],
@@ -609,7 +636,7 @@ class _ConsolePageState extends State<ConsolePage> {
       },
     );
   }
-  
+
   /// Build config switch item
   Widget _buildConfigSwitch({
     required String title,

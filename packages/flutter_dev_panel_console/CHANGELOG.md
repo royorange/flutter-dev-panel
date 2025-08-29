@@ -1,3 +1,17 @@
+## 1.1.1
+
+ - **FIX**: Console page RenderFlex overflow during keyboard display
+   - Added responsive layout that adjusts to available space
+   - Hide filter bar and status bar when space is limited (<200px)
+   - Prevent keyboard from auto-dismissing when focusing search field
+ - **FIX**: Search box layout issues during foldable screen transitions
+   - Handle extreme width constraints during folding animations
+   - Show simplified search icon when width is less than 50px
+   - Smooth transition between full and compact search box layouts
+ - **FIX**: Improved error capture to ensure overflow warnings appear in console
+   - Preserve original FlutterError.onError handler chain
+   - Ensure all Flutter errors are properly logged and displayed
+
 ## 1.1.0
 
  - **FEAT**: Improved Logger package output handling

@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.1.1 - 2025-08-29
+
+### Bug Fixes
+
+- **flutter_dev_panel**: Fix environment switcher text overflow on small screens
+- **flutter_dev_panel**: Fix theme switcher dropdown overflow issues
+- **flutter_dev_panel_console**: Fix console page RenderFlex overflow during keyboard display
+- **flutter_dev_panel_console**: Fix search box layout issues during foldable screen transitions
+- **flutter_dev_panel_console**: Fix keyboard auto-dismiss issue when focusing search field
+- **CI**: Fix GitHub Actions pub.dev publish detection logic using API instead of cache
+
 ## 2025-08-29
 
 ### Changes

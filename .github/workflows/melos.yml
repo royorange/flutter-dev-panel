@@ -207,7 +207,8 @@ jobs:
           MAIN_VERSION=$(grep "^version:" pubspec.yaml | cut -d' ' -f2)
           echo "Checking if main package flutter_dev_panel $MAIN_VERSION is already published..."
           
-          if flutter pub cache add flutter_dev_panel:$MAIN_VERSION 2>/dev/null; then
+          # 使用 curl 检查 pub.dev API
+          if curl -s "https://pub.dev/api/packages/flutter_dev_panel" | grep -q "\"$MAIN_VERSION\""; then
             echo "✅ Main package flutter_dev_panel $MAIN_VERSION is already published, skipping..."
           else
             echo "Publishing main package first..."
@@ -226,8 +227,8 @@ jobs:
             ATTEMPT=$((ATTEMPT+1))
             echo "Attempt $ATTEMPT/$MAX_ATTEMPTS: Checking if flutter_dev_panel $MAIN_VERSION is available..."
             
-            # 尝试解析依赖，如果成功说明包已经可用
-            if flutter pub cache add flutter_dev_panel:$MAIN_VERSION 2>/dev/null; then
+            # 使用 curl 检查 pub.dev API
+            if curl -s "https://pub.dev/api/packages/flutter_dev_panel" | grep -q "\"$MAIN_VERSION\""; then
               echo "✅ Main package is available on pub.dev!"
               break
             fi
