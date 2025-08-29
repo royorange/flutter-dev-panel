@@ -34,6 +34,31 @@ on:
         required: false
         type: boolean
         default: false
+      publish_main:
+        description: 'Publish flutter_dev_panel (main package)'
+        required: false
+        type: boolean
+        default: true
+      publish_console:
+        description: 'Publish flutter_dev_panel_console'
+        required: false
+        type: boolean
+        default: true
+      publish_network:
+        description: 'Publish flutter_dev_panel_network'
+        required: false
+        type: boolean
+        default: true
+      publish_device:
+        description: 'Publish flutter_dev_panel_device'
+        required: false
+        type: boolean
+        default: true
+      publish_performance:
+        description: 'Publish flutter_dev_panel_performance'
+        required: false
+        type: boolean
+        default: true
 
 jobs:
   melos:
@@ -194,55 +219,83 @@ jobs:
           MAIN_VERSION=$(grep "^version:" pubspec.yaml | cut -d' ' -f2)
           echo "Main package version to publish: $MAIN_VERSION"
           
-          # 检查 pub.dev 上的最新版本
-          PUBLISHED_VERSION=$(curl -s "https://pub.dev/api/packages/flutter_dev_panel" | grep -o '"latest":{"version":"[^"]*' | cut -d'"' -f6 || echo "0.0.0")
-          echo "Latest version on pub.dev: $PUBLISHED_VERSION"
-          
-          # 先发布主包
-          if [ "$PUBLISHED_VERSION" != "$MAIN_VERSION" ]; then
-            echo "📦 Publishing main package flutter_dev_panel $MAIN_VERSION..."
-            dart pub publish --force || { echo "❌ Failed to publish main package"; exit 1; }
-            echo "✅ Main package published successfully"
+          # 发布主包（如果用户选择了）
+          if [ "${{ github.event.inputs.publish_main }}" = "true" ]; then
+            echo "\n📦 Processing main package flutter_dev_panel..."
             
-            # 等待主包在 pub.dev 上可用
-            echo "Waiting for main package to be available on pub.dev..."
-            sleep 10
+            # 检查 pub.dev 上的最新版本
+            PUBLISHED_VERSION=$(curl -s "https://pub.dev/api/packages/flutter_dev_panel" | grep -o '"latest":{"version":"[^"]*' | cut -d'"' -f6 || echo "0.0.0")
+            echo "Latest version on pub.dev: $PUBLISHED_VERSION"
+            
+            if [ "$PUBLISHED_VERSION" != "$MAIN_VERSION" ]; then
+              echo "📦 Publishing main package flutter_dev_panel $MAIN_VERSION..."
+              dart pub publish --force || echo "⚠️ Failed to publish main package (may already be published)"
+              echo "Waiting for main package to be available on pub.dev..."
+              sleep 10
+            else
+              echo "✅ Main package flutter_dev_panel $MAIN_VERSION is already published"
+            fi
           else
-            echo "✅ Main package flutter_dev_panel $MAIN_VERSION is already published"
+            echo "⏭️ Skipping main package (not selected)"
           fi
           
-          # 更新子包依赖并发布
-          for package_dir in packages/*; do
-            if [ -d "$package_dir" ]; then
-              PACKAGE_NAME=$(basename $package_dir)
-              cd $package_dir
+          # 发布子包（根据用户选择）
+          publish_subpackage() {
+            local package_name=$1
+            local input_var=$2
+            
+            if [ "$input_var" = "true" ]; then
+              echo "\n📦 Processing $package_name..."
               
-              # 获取包版本
-              PACKAGE_VERSION=$(grep "^version:" pubspec.yaml | cut -d' ' -f2)
-              echo ""
-              echo "Processing $PACKAGE_NAME version $PACKAGE_VERSION..."
-              
-              # 检查是否已发布
-              PUBLISHED_PKG_VERSION=$(curl -s "https://pub.dev/api/packages/$PACKAGE_NAME" | grep -o '"latest":{"version":"[^"]*' | cut -d'"' -f6 || echo "0.0.0")
-              
-              if [ "$PUBLISHED_PKG_VERSION" = "$PACKAGE_VERSION" ]; then
-                echo "✅ $PACKAGE_NAME $PACKAGE_VERSION is already published, skipping..."
+              if [ -d "packages/$package_name" ]; then
+                cd "packages/$package_name"
+                
+                # 获取包版本
+                PACKAGE_VERSION=$(grep "^version:" pubspec.yaml | cut -d' ' -f2)
+                echo "Package version: $PACKAGE_VERSION"
+                
+                # 检查是否已发布
+                PUBLISHED_PKG_VERSION=$(curl -s "https://pub.dev/api/packages/$package_name" | grep -o '"latest":{"version":"[^"]*' | cut -d'"' -f6 || echo "0.0.0")
+                
+                if [ "$PUBLISHED_PKG_VERSION" = "$PACKAGE_VERSION" ]; then
+                  echo "✅ $package_name $PACKAGE_VERSION is already published"
+                else
+                  # 更新依赖到已发布的主包版本
+                  echo "Updating dependency to flutter_dev_panel: ^$MAIN_VERSION"
+                  cp pubspec.yaml pubspec.yaml.bak
+                  
+                  # 检查主包版本是否已在 pub.dev 上
+                  MAIN_PUB_VERSION=$(curl -s "https://pub.dev/api/packages/flutter_dev_panel" | grep -o '"latest":{"version":"[^"]*' | cut -d'"' -f6 || echo "0.0.0")
+                  if [ "$MAIN_PUB_VERSION" = "$MAIN_VERSION" ]; then
+                    DEPENDENCY_VERSION=$MAIN_VERSION
+                  else
+                    echo "⚠️ Main package $MAIN_VERSION not yet on pub.dev, using $MAIN_PUB_VERSION"
+                    DEPENDENCY_VERSION=$MAIN_PUB_VERSION
+                  fi
+                  
+                  sed "s|flutter_dev_panel:.*|flutter_dev_panel: ^$DEPENDENCY_VERSION|g" pubspec.yaml.bak | grep -v "path:" > pubspec.yaml
+                  
+                  echo "📦 Publishing $package_name $PACKAGE_VERSION..."
+                  dart pub publish --force || echo "⚠️ Failed to publish $package_name"
+                  
+                  # 恢复原始文件
+                  mv pubspec.yaml.bak pubspec.yaml
+                fi
+                
+                cd ../..
               else
-                # 更新依赖到已发布的主包版本
-                echo "Updating dependency to flutter_dev_panel: ^$MAIN_VERSION"
-                cp pubspec.yaml pubspec.yaml.bak
-                sed "s|flutter_dev_panel:.*|flutter_dev_panel: ^$MAIN_VERSION|g" pubspec.yaml.bak | grep -v "path:" > pubspec.yaml
-                
-                echo "📦 Publishing $PACKAGE_NAME $PACKAGE_VERSION..."
-                dart pub publish --force || echo "⚠️ Failed to publish $PACKAGE_NAME, continuing..."
-                
-                # 恢复原始文件
-                mv pubspec.yaml.bak pubspec.yaml
+                echo "⚠️ Package directory packages/$package_name not found"
               fi
-              
-              cd ../..
+            else
+              echo "⏭️ Skipping $package_name (not selected)"
             fi
-          done
+          }
+          
+          # 发布各个子包
+          publish_subpackage "flutter_dev_panel_console" "${{ github.event.inputs.publish_console }}"
+          publish_subpackage "flutter_dev_panel_network" "${{ github.event.inputs.publish_network }}"
+          publish_subpackage "flutter_dev_panel_device" "${{ github.event.inputs.publish_device }}"
+          publish_subpackage "flutter_dev_panel_performance" "${{ github.event.inputs.publish_performance }}"
           
           echo ""
           echo "🎉 Publishing process completed!"
