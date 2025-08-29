@@ -237,7 +237,7 @@ jobs:
           
           # 发布子包
           echo "Publishing sub-packages..."
-          dart run melos publish --no-dry-run --yes --no-published-filter
+          dart run melos publish --no-dry-run --yes --no-published
       
       # Summary
       - name: Generate Summary
