@@ -48,13 +48,13 @@
 
 ```yaml
 dependencies:
-  flutter_dev_panel: ^1.0.3
+  flutter_dev_panel: ^1.1.0
   
   # 按需添加模块
-  flutter_dev_panel_console: ^1.0.3    # 日志
-  flutter_dev_panel_network: ^1.0.3    # 网络监控
-  flutter_dev_panel_performance: ^1.0.3 # 性能跟踪
-  flutter_dev_panel_device: ^1.0.3      # 设备信息
+  flutter_dev_panel_console: ^1.1.0    # 日志
+  flutter_dev_panel_network: ^1.1.0    # 网络监控
+  flutter_dev_panel_performance: ^1.1.0 # 性能跟踪
+  flutter_dev_panel_device: ^1.1.0      # 设备信息
 ```
 
 ### 基本设置
