@@ -1,5 +1,15 @@
 ## 1.1.0
 
+ - **FEAT**: Improved Logger package output handling
+   - Clean display of multi-line Logger output in list view
+   - Remove ANSI escape codes and box-drawing characters in detail view
+   - Replace Logger decoration lines with elegant dashed dividers
+   - Better visual separation between error messages and stack traces
+ - **FEAT**: Enhanced RenderFlex overflow warning capture
+   - Capture complete Flutter error output including widget tree and constraints
+   - Display full context for RenderFlex overflow warnings
+   - Improved error detail formatting with proper highlighting
+ - **FIX**: Remove trailing empty lines in log detail view
  - **FIX**: ci. ([228211f5](https://github.com/royorange/flutter_dev_panel/commit/228211f55cdd6efb9725070e7397ac525e7a9b88))
  - **FEAT**: optimize logger print. ([3f969cd8](https://github.com/royorange/flutter_dev_panel/commit/3f969cd851a0f1cb428ead10a46267625c427de6))
 
