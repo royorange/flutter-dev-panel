@@ -758,21 +758,17 @@ class DevLogger {
           .firstWhere((line) => line.isNotEmpty, orElse: () => 'Logger output');
     }
     
-    // Clean ANSI codes from full message while preserving box drawing characters
-    // Use a single comprehensive regex for better performance
-    final cleanedFullMessage = fullMessage.replaceAll(
-      RegExp(r'(?:\x1B\[[0-9;]*m|\[(?:38;5;)?\d+(?:;\d+)*m)'),
-      '',
-    );
+    // Store the original full message, don't clean it here
+    // The UI layer will handle display formatting
     
     // Create a single log entry
-    // Use core message for display in list, cleaned full content in stackTrace for detail view
+    // Use core message for display in list, original full content in stackTrace for detail view
     final entry = LogEntry(
       timestamp: _loggerBufferStartTime ?? DateTime.now(),
       level: detectedLevel,
       message: coreMessage,
       error: null,
-      stackTrace: cleanedFullMessage, // Store cleaned formatted output for detail view
+      stackTrace: fullMessage, // Store original formatted output for detail view
     );
     
     _logs.addLast(entry);

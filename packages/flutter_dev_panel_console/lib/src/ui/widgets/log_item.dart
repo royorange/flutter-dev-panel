@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../../models/log_entry.dart';
 import '../../providers/console_provider.dart';
+import 'log_item_painter.dart';
 
 /// 单个日志项的显示组件
 class LogItem extends StatelessWidget {
@@ -329,6 +330,9 @@ class LogDetailSheet extends StatelessWidget {
     Widget contentWidget;
     if (isFlutterError && content.contains('EXCEPTION CAUGHT BY')) {
       contentWidget = _buildHighlightedErrorContent(context, content);
+    } else if (_isLoggerFormattedOutput(content)) {
+      // Also use highlighted content for Logger output
+      contentWidget = _buildHighlightedErrorContent(context, content);
     } else {
       contentWidget = SelectableText(
         content,
@@ -379,68 +383,218 @@ class LogDetailSheet extends StatelessWidget {
 
   Widget _buildHighlightedErrorContent(BuildContext context, String content) {
     final theme = Theme.of(context);
-    final List<TextSpan> spans = [];
-    final lines = content.split('\n');
+    final List<Widget> widgets = [];
+    final List<TextSpan> currentSpans = [];
     
-    for (final line in lines) {
+    // First, clean ANSI escape codes from the entire content
+    // Match all variations of ANSI codes including those without escape character
+    String cleanedContent = content;
+    
+    // Remove standard ANSI escape sequences
+    cleanedContent = cleanedContent.replaceAll(RegExp(r'\x1B\[[0-9;]*m'), '');
+    
+    // Remove bracketed codes that look like ANSI but without escape char
+    // This includes [38;5;196m, [0m, etc.
+    // More comprehensive pattern to catch all variations
+    cleanedContent = cleanedContent.replaceAll(RegExp(r'\[[\d;]+m'), '');
+    
+    final lines = cleanedContent.split('\n');
+    
+    // Check if this is Logger formatted output
+    final isLoggerOutput = _isLoggerFormattedOutput(cleanedContent);
+    
+    // Trim trailing empty lines
+    while (lines.isNotEmpty && lines.last.trim().isEmpty) {
+      lines.removeLast();
+    }
+    
+    for (int i = 0; i < lines.length; i++) {
+      final line = lines[i];
+      
+      // Replace Logger box-drawing lines with our own separator
+      if (isLoggerOutput && _isLoggerDecorationLine(line)) {
+        // Add a subtle separator line instead of the Logger decoration
+        // Check if this is a middle separator (between exception and stack trace)
+        if (line.startsWith('├') && line.contains('┄')) {
+          // First, add any accumulated text spans but remove the trailing newline
+          if (currentSpans.isNotEmpty) {
+            // Remove last newline before adding divider
+            if (currentSpans.last.toPlainText() == '\n') {
+              currentSpans.removeLast();
+            }
+            widgets.add(SelectableText.rich(
+              TextSpan(children: List.from(currentSpans)),
+            ));
+            currentSpans.clear();
+          }
+          // Add a dashed divider widget with asymmetric margin (more space on top)
+          widgets.add(
+            Container(
+              margin: const EdgeInsets.only(top: 6, bottom: 4),
+              child: CustomPaint(
+                size: const Size(double.infinity, 1),
+                painter: DashedLinePainter(
+                  color: theme.dividerColor.withValues(alpha: 0.3),
+                ),
+              ),
+            ),
+          );
+        }
+        continue; // Skip the original line
+      }
+      
+      // Remove Logger box-drawing prefix if present
+      String cleanLine = line;
+      if (isLoggerOutput) {
+        // Remove various Logger prefixes
+        if (line.startsWith('│ ')) {
+          cleanLine = line.substring(2); // Remove "│ " prefix
+        } else if (line.startsWith('├ ')) {
+          cleanLine = line.substring(2); // Remove "├ " prefix  
+        } else if (line.startsWith('│')) {
+          cleanLine = line.substring(1).trimLeft(); // Remove "│" and spaces
+        }
+        
+        // Check again if the cleaned line is just decoration
+        if (_isLoggerDecorationLine(cleanLine)) {
+          continue;
+        }
+      }
+      
+      // Skip empty lines
+      if (cleanLine.trim().isEmpty) {
+        continue;
+      }
+      
       TextStyle style;
       
       // Simple and effective highlighting rules
-      if (line.contains(':') && !line.contains('://')) {
+      if (cleanLine.contains(':') && !cleanLine.contains('://')) {
         // Lines with colons (property lines) - make the label bold
-        final colonIndex = line.indexOf(':');
-        final label = line.substring(0, colonIndex + 1);
-        final value = line.substring(colonIndex + 1);
-        
-        spans.add(TextSpan(
-          text: label,
-          style: const TextStyle(
-            fontFamily: 'Courier New, monospace',
-            fontWeight: FontWeight.bold,
-            fontSize: 13,
-          ),
-        ));
-        spans.add(TextSpan(
-          text: value,
-          style: const TextStyle(
-            fontFamily: 'Courier New, monospace',
-            fontSize: 13,
-          ),
-        ));
-        spans.add(const TextSpan(text: '\n'));
-      } else if (line.contains('file:///') || line.contains('http://')) {
+        final colonIndex = cleanLine.indexOf(':');
+        if (colonIndex > 0 && colonIndex < cleanLine.length - 1) {
+          final label = cleanLine.substring(0, colonIndex + 1);
+          final value = cleanLine.substring(colonIndex + 1);
+          
+          currentSpans.add(TextSpan(
+            text: label,
+            style: const TextStyle(
+              fontFamily: 'Courier New, monospace',
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
+          ));
+          currentSpans.add(TextSpan(
+            text: value,
+            style: const TextStyle(
+              fontFamily: 'Courier New, monospace',
+              fontSize: 13,
+            ),
+          ));
+        } else {
+          // If colon is at the edge, treat as normal text
+          currentSpans.add(TextSpan(
+            text: cleanLine,
+            style: const TextStyle(
+              fontFamily: 'Courier New, monospace',
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ));
+        }
+        // Add newline except for last line
+        if (i < lines.length - 1) {
+          currentSpans.add(const TextSpan(text: '\n'));
+        }
+      } else if (cleanLine.contains('file:///') || cleanLine.contains('http://')) {
         // URLs - underlined
         style = const TextStyle(
           fontFamily: 'Courier New, monospace',
           decoration: TextDecoration.underline,
           fontSize: 13,
         );
-        spans.add(TextSpan(text: line, style: style));
-        spans.add(const TextSpan(text: '\n'));
-      } else if (RegExp(r'^[◢◤═─]+$').hasMatch(line.trim())) {
+        currentSpans.add(TextSpan(text: cleanLine, style: style));
+        if (i < lines.length - 1) {
+          currentSpans.add(const TextSpan(text: '\n'));
+        }
+      } else if (RegExp(r'^[◢◤═─]+$').hasMatch(cleanLine.trim())) {
         // Decorative lines - dimmed
         style = TextStyle(
           fontFamily: 'Courier New, monospace',
           color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
           fontSize: 13,
         );
-        spans.add(TextSpan(text: line, style: style));
-        spans.add(const TextSpan(text: '\n'));
-      } else {
-        // Everything else - normal monospace
+        currentSpans.add(TextSpan(text: cleanLine, style: style));
+        if (i < lines.length - 1) {
+          currentSpans.add(const TextSpan(text: '\n'));
+        }
+      } else if (cleanLine.trim().isNotEmpty) {
+        // Everything else - normal monospace (skip empty lines)
         style = const TextStyle(
           fontFamily: 'Courier New, monospace',
           fontSize: 13,
           height: 1.4,
         );
-        spans.add(TextSpan(text: line, style: style));
-        spans.add(const TextSpan(text: '\n'));
+        currentSpans.add(TextSpan(text: cleanLine, style: style));
+        if (i < lines.length - 1) {
+          currentSpans.add(const TextSpan(text: '\n'));
+        }
       }
     }
     
-    return SelectableText.rich(
-      TextSpan(children: spans),
-    );
+    // Add any remaining spans
+    if (currentSpans.isNotEmpty) {
+      // Remove trailing newline if present
+      if (currentSpans.isNotEmpty) {
+        final lastSpan = currentSpans.last;
+        final lastText = lastSpan.toPlainText();
+        if (lastText == '\n') {
+          currentSpans.removeLast();
+        }
+      }
+      widgets.add(SelectableText.rich(
+        TextSpan(children: List.from(currentSpans)),
+      ));
+    }
+    
+    // If we have multiple widgets, return a Column, otherwise return single SelectableText
+    if (widgets.length > 1) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: widgets,
+      );
+    } else if (widgets.isNotEmpty) {
+      return widgets.first;
+    } else {
+      // Fallback for empty content
+      return SelectableText.rich(
+        TextSpan(text: content),
+      );
+    }
+  }
+  
+  /// Check if a line is purely Logger decoration
+  bool _isLoggerDecorationLine(String line) {
+    final trimmed = line.trim();
+    if (trimmed.isEmpty) return true;
+    
+    // Check for Logger's dotted separator lines like "├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄"
+    if (line.startsWith('├') && line.contains('┄')) return true;
+    if (line.startsWith('│') && RegExp(r'^│\s*[┄─╌╍╎╏\-_=]+\s*$').hasMatch(line)) return true;
+    
+    // More comprehensive check for Logger decoration lines
+    // These dashed lines might contain normal dashes
+    if (RegExp(r'^-{10,}$').hasMatch(trimmed)) return true; // Lines with 10+ dashes
+    if (RegExp(r'^_{10,}$').hasMatch(trimmed)) return true; // Lines with 10+ underscores
+    if (RegExp(r'^={10,}$').hasMatch(trimmed)) return true; // Lines with 10+ equals
+    if (RegExp(r'^┄{10,}$').hasMatch(trimmed)) return true; // Lines with 10+ dotted lines
+    
+    // Match pure decoration lines from Logger package
+    // Include various types of lines and box-drawing characters including ┄ (dotted)
+    return RegExp(r'^[┌├└─┐┤┘│╌╍╎╏┄\-_=]+$').hasMatch(trimmed) ||
+           RegExp(r'^[│├]\s*[-─╌╍╎╏┄_=]+\s*$').hasMatch(line) || // Lines like "│ --------"
+           (trimmed.startsWith('├') && trimmed.endsWith('┤')) || // Box middle lines
+           (trimmed.startsWith('└') && trimmed.endsWith('┘')); // Box bottom lines
   }
 
   String _getStackTraceTitle(String stackTrace) {
