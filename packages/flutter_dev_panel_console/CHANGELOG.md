@@ -1,3 +1,8 @@
+## 1.1.0
+
+ - **FIX**: ci. ([228211f5](https://github.com/royorange/flutter_dev_panel/commit/228211f55cdd6efb9725070e7397ac525e7a9b88))
+ - **FEAT**: optimize logger print. ([3f969cd8](https://github.com/royorange/flutter_dev_panel/commit/3f969cd851a0f1cb428ead10a46267625c427de6))
+
 ## 1.0.3
 
  - Update a dependency to the latest release.

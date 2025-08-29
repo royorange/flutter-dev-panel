@@ -15,6 +15,50 @@ Packages with breaking changes:
 
 Packages with other changes:
 
+ - [`flutter_dev_panel` - `v1.1.0`](#flutter_dev_panel---v110)
+ - [`flutter_dev_panel_console` - `v1.1.0`](#flutter_dev_panel_console---v110)
+ - [`flutter_dev_panel_performance` - `v1.0.4`](#flutter_dev_panel_performance---v104)
+ - [`flutter_dev_panel_network` - `v1.0.4`](#flutter_dev_panel_network---v104)
+ - [`flutter_dev_panel_device` - `v1.0.4`](#flutter_dev_panel_device---v104)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `flutter_dev_panel_performance` - `v1.0.4`
+ - `flutter_dev_panel_network` - `v1.0.4`
+ - `flutter_dev_panel_device` - `v1.0.4`
+
+---
+
+#### `flutter_dev_panel` - `v1.1.0`
+
+ - **FIX**: ci. ([228211f5](https://github.com/royorange/flutter_dev_panel/commit/228211f55cdd6efb9725070e7397ac525e7a9b88))
+ - **FEAT**: optimize logger print. ([3f969cd8](https://github.com/royorange/flutter_dev_panel/commit/3f969cd851a0f1cb428ead10a46267625c427de6))
+
+#### `flutter_dev_panel_console` - `v1.1.0`
+
+ - **FIX**: ci. ([228211f5](https://github.com/royorange/flutter_dev_panel/commit/228211f55cdd6efb9725070e7397ac525e7a9b88))
+ - **FEAT**: optimize logger print. ([3f969cd8](https://github.com/royorange/flutter_dev_panel/commit/3f969cd851a0f1cb428ead10a46267625c427de6))
+
+## 1.1.0
+
+ - **FIX**: ci. ([228211f5](https://github.com/royorange/flutter_dev_panel/commit/228211f55cdd6efb9725070e7397ac525e7a9b88))
+ - **FEAT**: optimize logger print. ([3f969cd8](https://github.com/royorange/flutter_dev_panel/commit/3f969cd851a0f1cb428ead10a46267625c427de6))
+
+
+## 2025-08-29
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
  - [`flutter_dev_panel` - `v1.0.3`](#flutter_dev_panel---v103)
  - [`flutter_dev_panel_performance` - `v1.0.3`](#flutter_dev_panel_performance---v103)
  - [`flutter_dev_panel_network` - `v1.0.3`](#flutter_dev_panel_network---v103)
