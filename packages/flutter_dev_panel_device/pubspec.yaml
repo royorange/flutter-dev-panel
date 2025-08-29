@@ -1,6 +1,6 @@
 name: flutter_dev_panel_device
 description: Device information module for Flutter Dev Panel
-version: 1.0.1
+version: 1.0.2
 homepage: https://github.com/royorange/flutter-dev-panel
 
 environment:

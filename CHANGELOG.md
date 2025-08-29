@@ -3,6 +3,66 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-08-29
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`flutter_dev_panel` - `v1.0.2`](#flutter_dev_panel---v102)
+ - [`flutter_dev_panel_console` - `v1.0.2`](#flutter_dev_panel_console---v102)
+ - [`flutter_dev_panel_network` - `v1.0.2`](#flutter_dev_panel_network---v102)
+ - [`flutter_dev_panel_device` - `v1.0.2`](#flutter_dev_panel_device---v102)
+ - [`flutter_dev_panel_performance` - `v1.0.2`](#flutter_dev_panel_performance---v102)
+
+---
+
+#### `flutter_dev_panel` - `v1.0.2`
+
+ - **REFACTOR**: implement comprehensive error capture using modern Flutter APIs. ([be344aff](https://github.com/royorange/flutter_dev_panel/commit/be344aff66547956aaf4c67a31e0fe00242c3e42))
+ - **FIX**: update ignore. ([dc46305d](https://github.com/royorange/flutter_dev_panel/commit/dc46305d4132c5b4fab151efcc05d41a697328a3))
+ - **FIX**: 优化日志. ([4c73ba3d](https://github.com/royorange/flutter_dev_panel/commit/4c73ba3d25787489a7823ecf4a5e2529757bb4a7))
+ - **FIX**: 优化日志. ([6a2e439f](https://github.com/royorange/flutter_dev_panel/commit/6a2e439f7a5f41f5fc8d89efc7f786743bb66030))
+ - **FIX**: improve RenderFlex overflow error capture using debugPrintSynchronously override. ([560f87af](https://github.com/royorange/flutter_dev_panel/commit/560f87afbd2866a40fb8f8abcda9468b82ccc71c))
+ - **FIX**: optimize Logger package output handling in Console module. ([6c09fb8b](https://github.com/royorange/flutter_dev_panel/commit/6c09fb8b51103186c396097339debe3d36aec7c9))
+ - **FIX**: ci update. ([38bf26e1](https://github.com/royorange/flutter_dev_panel/commit/38bf26e173c9e07b7c672b9ccc42961df6721742))
+ - **FIX**: cd for publish. ([3f8a4803](https://github.com/royorange/flutter_dev_panel/commit/3f8a4803b26f9f5d1d2e091d345cb8cc25d2258a))
+
+#### `flutter_dev_panel_console` - `v1.0.2`
+
+ - **FIX**: 优化日志. ([4c73ba3d](https://github.com/royorange/flutter_dev_panel/commit/4c73ba3d25787489a7823ecf4a5e2529757bb4a7))
+ - **FIX**: optimize Logger package output handling in Console module. ([6c09fb8b](https://github.com/royorange/flutter_dev_panel/commit/6c09fb8b51103186c396097339debe3d36aec7c9))
+
+#### `flutter_dev_panel_network` - `v1.0.2`
+
+ - Bump "flutter_dev_panel_network" to `1.0.2`.
+
+#### `flutter_dev_panel_device` - `v1.0.2`
+
+ - Bump "flutter_dev_panel_device" to `1.0.2`.
+
+#### `flutter_dev_panel_performance` - `v1.0.2`
+
+ - Bump "flutter_dev_panel_performance" to `1.0.2`.
+
+## 1.0.2
+
+ - **REFACTOR**: implement comprehensive error capture using modern Flutter APIs. ([be344aff](https://github.com/royorange/flutter_dev_panel/commit/be344aff66547956aaf4c67a31e0fe00242c3e42))
+ - **FIX**: update ignore. ([dc46305d](https://github.com/royorange/flutter_dev_panel/commit/dc46305d4132c5b4fab151efcc05d41a697328a3))
+ - **FIX**: 优化日志. ([4c73ba3d](https://github.com/royorange/flutter_dev_panel/commit/4c73ba3d25787489a7823ecf4a5e2529757bb4a7))
+ - **FIX**: 优化日志. ([6a2e439f](https://github.com/royorange/flutter_dev_panel/commit/6a2e439f7a5f41f5fc8d89efc7f786743bb66030))
+ - **FIX**: improve RenderFlex overflow error capture using debugPrintSynchronously override. ([560f87af](https://github.com/royorange/flutter_dev_panel/commit/560f87afbd2866a40fb8f8abcda9468b82ccc71c))
+ - **FIX**: optimize Logger package output handling in Console module. ([6c09fb8b](https://github.com/royorange/flutter_dev_panel/commit/6c09fb8b51103186c396097339debe3d36aec7c9))
+ - **FIX**: ci update. ([38bf26e1](https://github.com/royorange/flutter_dev_panel/commit/38bf26e173c9e07b7c672b9ccc42961df6721742))
+ - **FIX**: cd for publish. ([3f8a4803](https://github.com/royorange/flutter_dev_panel/commit/3f8a4803b26f9f5d1d2e091d345cb8cc25d2258a))
+
+
 ## 2025-08-25
 
 ### Changes

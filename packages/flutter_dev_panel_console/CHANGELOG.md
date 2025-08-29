@@ -1,3 +1,8 @@
+## 1.0.2
+
+ - **FIX**: 优化日志. ([4c73ba3d](https://github.com/royorange/flutter_dev_panel/commit/4c73ba3d25787489a7823ecf4a5e2529757bb4a7))
+ - **FIX**: optimize Logger package output handling in Console module. ([6c09fb8b](https://github.com/royorange/flutter_dev_panel/commit/6c09fb8b51103186c396097339debe3d36aec7c9))
+
 ## 1.0.1
 
  - **REFACTOR**: use factory function for Logger integration without direct dependency. ([6467f784](https://github.com/royorange/flutter_dev_panel/commit/6467f7849cfb1a617fe33a8769b79b77e2d2e473))

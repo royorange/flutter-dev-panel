@@ -1,3 +1,7 @@
+## 1.0.2
+
+ - Bump "flutter_dev_panel_network" to `1.0.2`.
+
 ## 1.0.1
 
  - **REFACTOR**: 重构为模块化架构. ([ef4edf8a](https://github.com/royorange/flutter_dev_panel/commit/ef4edf8a350a88e230ae8b40508efb4978ff99f6))
