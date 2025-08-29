@@ -1,5 +1,10 @@
 ## 1.1.1
 
+ - **FIX**: overflow issue. ([47a234f2](https://github.com/royorange/flutter_dev_panel/commit/47a234f2218012592a6747426b28b1f25ad07214))
+ - **FIX**: update version. ([bad509cb](https://github.com/royorange/flutter_dev_panel/commit/bad509cb398356502c57d218a67690329c029fc3))
+
+## 1.1.1
+
  - Update dependencies
 
 ## 1.1.0

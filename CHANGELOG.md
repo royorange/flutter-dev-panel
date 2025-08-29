@@ -3,6 +3,62 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-08-29
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`flutter_dev_panel` - `v1.1.1`](#flutter_dev_panel---v111)
+ - [`flutter_dev_panel_console` - `v1.1.1`](#flutter_dev_panel_console---v111)
+ - [`flutter_dev_panel_network` - `v1.1.1`](#flutter_dev_panel_network---v111)
+ - [`flutter_dev_panel_device` - `v1.1.1`](#flutter_dev_panel_device---v111)
+ - [`flutter_dev_panel_performance` - `v1.1.1`](#flutter_dev_panel_performance---v111)
+
+---
+
+#### `flutter_dev_panel` - `v1.1.1`
+
+ - **FIX**: overflow issue. ([47a234f2](https://github.com/royorange/flutter_dev_panel/commit/47a234f2218012592a6747426b28b1f25ad07214))
+ - **FIX**: fix overflow issue. ([bcf2d250](https://github.com/royorange/flutter_dev_panel/commit/bcf2d2503d83e2ffe651de891781045a2797159e))
+ - **FIX**: update version. ([bad509cb](https://github.com/royorange/flutter_dev_panel/commit/bad509cb398356502c57d218a67690329c029fc3))
+ - **DOCS**: update changelog. ([ea2256db](https://github.com/royorange/flutter_dev_panel/commit/ea2256db0b6af5e9661e769e00214ae7c48cea4d))
+
+#### `flutter_dev_panel_console` - `v1.1.1`
+
+ - **FIX**: overflow issue. ([47a234f2](https://github.com/royorange/flutter_dev_panel/commit/47a234f2218012592a6747426b28b1f25ad07214))
+ - **FIX**: fix overflow issue. ([bcf2d250](https://github.com/royorange/flutter_dev_panel/commit/bcf2d2503d83e2ffe651de891781045a2797159e))
+ - **DOCS**: update changelog. ([ea2256db](https://github.com/royorange/flutter_dev_panel/commit/ea2256db0b6af5e9661e769e00214ae7c48cea4d))
+
+#### `flutter_dev_panel_network` - `v1.1.1`
+
+ - **FIX**: overflow issue. ([47a234f2](https://github.com/royorange/flutter_dev_panel/commit/47a234f2218012592a6747426b28b1f25ad07214))
+ - **FIX**: update version. ([bad509cb](https://github.com/royorange/flutter_dev_panel/commit/bad509cb398356502c57d218a67690329c029fc3))
+
+#### `flutter_dev_panel_device` - `v1.1.1`
+
+ - **FIX**: overflow issue. ([47a234f2](https://github.com/royorange/flutter_dev_panel/commit/47a234f2218012592a6747426b28b1f25ad07214))
+ - **FIX**: update version. ([bad509cb](https://github.com/royorange/flutter_dev_panel/commit/bad509cb398356502c57d218a67690329c029fc3))
+
+#### `flutter_dev_panel_performance` - `v1.1.1`
+
+ - **FIX**: overflow issue. ([47a234f2](https://github.com/royorange/flutter_dev_panel/commit/47a234f2218012592a6747426b28b1f25ad07214))
+ - **FIX**: update version. ([bad509cb](https://github.com/royorange/flutter_dev_panel/commit/bad509cb398356502c57d218a67690329c029fc3))
+
+## 1.1.1
+
+ - **FIX**: overflow issue. ([47a234f2](https://github.com/royorange/flutter_dev_panel/commit/47a234f2218012592a6747426b28b1f25ad07214))
+ - **FIX**: fix overflow issue. ([bcf2d250](https://github.com/royorange/flutter_dev_panel/commit/bcf2d2503d83e2ffe651de891781045a2797159e))
+ - **FIX**: update version. ([bad509cb](https://github.com/royorange/flutter_dev_panel/commit/bad509cb398356502c57d218a67690329c029fc3))
+ - **DOCS**: update changelog. ([ea2256db](https://github.com/royorange/flutter_dev_panel/commit/ea2256db0b6af5e9661e769e00214ae7c48cea4d))
+
+
 ## 1.1.1 - 2025-08-29
 
 ### Bug Fixes

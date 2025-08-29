@@ -1,6 +1,6 @@
 name: flutter_dev_panel_performance
 description: Performance monitoring module for Flutter Dev Panel
-version: 1.1.0
+version: 1.1.1
 homepage: https://github.com/royorange/flutter-dev-panel
 
 environment:

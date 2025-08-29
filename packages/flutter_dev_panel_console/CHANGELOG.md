@@ -1,5 +1,11 @@
 ## 1.1.1
 
+ - **FIX**: overflow issue. ([47a234f2](https://github.com/royorange/flutter_dev_panel/commit/47a234f2218012592a6747426b28b1f25ad07214))
+ - **FIX**: fix overflow issue. ([bcf2d250](https://github.com/royorange/flutter_dev_panel/commit/bcf2d2503d83e2ffe651de891781045a2797159e))
+ - **DOCS**: update changelog. ([ea2256db](https://github.com/royorange/flutter_dev_panel/commit/ea2256db0b6af5e9661e769e00214ae7c48cea4d))
+
+## 1.1.1
+
  - **FIX**: Console page RenderFlex overflow during keyboard display
    - Added responsive layout that adjusts to available space
    - Hide filter bar and status bar when space is limited (<200px)
