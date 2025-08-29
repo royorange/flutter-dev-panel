@@ -182,19 +182,6 @@ jobs:
           # Melos 3.0+ 使用这些文件管理本地依赖，但发布时必须删除
           echo "Removing pubspec_overrides.yaml files..."
           find . -name "pubspec_overrides.yaml" -type f -delete
-          
-          # 同时确保子包的 pubspec.yaml 使用正确的版本依赖
-          MAIN_VERSION=$(grep "^version:" pubspec.yaml | cut -d' ' -f2)
-          echo "Main package version: $MAIN_VERSION"
-          
-          for package_dir in packages/*; do
-            if [ -d "$package_dir" ]; then
-              echo "Updating $package_dir/pubspec.yaml"
-              # 将 path 依赖改为版本依赖
-              sed -i.bak "s|flutter_dev_panel:.*|flutter_dev_panel: ^$MAIN_VERSION|g" "$package_dir/pubspec.yaml"
-              sed -i "/path: \.\.\/\.\./d" "$package_dir/pubspec.yaml"
-            fi
-          done
       
       - name: Publish Packages
         if: |
@@ -203,49 +190,62 @@ jobs:
         run: |
           export PATH="$PATH:$HOME/.pub-cache/bin"
           
-          # 检查主包是否已经发布
+          # 获取所有包的版本
           MAIN_VERSION=$(grep "^version:" pubspec.yaml | cut -d' ' -f2)
-          echo "Checking if main package flutter_dev_panel $MAIN_VERSION is already published..."
+          echo "Main package version to publish: $MAIN_VERSION"
           
-          # 使用 curl 检查 pub.dev API
-          if curl -s "https://pub.dev/api/packages/flutter_dev_panel" | grep -q "\"$MAIN_VERSION\""; then
-            echo "✅ Main package flutter_dev_panel $MAIN_VERSION is already published, skipping..."
+          # 检查 pub.dev 上的最新版本
+          PUBLISHED_VERSION=$(curl -s "https://pub.dev/api/packages/flutter_dev_panel" | grep -o '"latest":{"version":"[^"]*' | cut -d'"' -f6 || echo "0.0.0")
+          echo "Latest version on pub.dev: $PUBLISHED_VERSION"
+          
+          # 先发布主包
+          if [ "$PUBLISHED_VERSION" != "$MAIN_VERSION" ]; then
+            echo "📦 Publishing main package flutter_dev_panel $MAIN_VERSION..."
+            dart pub publish --force || { echo "❌ Failed to publish main package"; exit 1; }
+            echo "✅ Main package published successfully"
+            
+            # 等待主包在 pub.dev 上可用
+            echo "Waiting for main package to be available on pub.dev..."
+            sleep 10
           else
-            echo "Publishing main package first..."
-            cd .
-            dart pub publish --force
-            cd -
+            echo "✅ Main package flutter_dev_panel $MAIN_VERSION is already published"
           fi
           
-          # 等待 pub.dev 同步（每5秒检查一次，最多2分钟）
-          echo "Waiting for pub.dev to sync main package..."
-          MAIN_VERSION=$(grep "^version:" pubspec.yaml | cut -d' ' -f2)
-          MAX_ATTEMPTS=24  # 24 * 5秒 = 120秒 = 2分钟
-          ATTEMPT=0
-          
-          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
-            ATTEMPT=$((ATTEMPT+1))
-            echo "Attempt $ATTEMPT/$MAX_ATTEMPTS: Checking if flutter_dev_panel $MAIN_VERSION is available..."
-            
-            # 使用 curl 检查 pub.dev API
-            if curl -s "https://pub.dev/api/packages/flutter_dev_panel" | grep -q "\"$MAIN_VERSION\""; then
-              echo "✅ Main package is available on pub.dev!"
-              break
-            fi
-            
-            if [ $ATTEMPT -lt $MAX_ATTEMPTS ]; then
-              echo "Package not yet available, waiting 5 seconds..."
-              sleep 5
+          # 更新子包依赖并发布
+          for package_dir in packages/*; do
+            if [ -d "$package_dir" ]; then
+              PACKAGE_NAME=$(basename $package_dir)
+              cd $package_dir
+              
+              # 获取包版本
+              PACKAGE_VERSION=$(grep "^version:" pubspec.yaml | cut -d' ' -f2)
+              echo ""
+              echo "Processing $PACKAGE_NAME version $PACKAGE_VERSION..."
+              
+              # 检查是否已发布
+              PUBLISHED_PKG_VERSION=$(curl -s "https://pub.dev/api/packages/$PACKAGE_NAME" | grep -o '"latest":{"version":"[^"]*' | cut -d'"' -f6 || echo "0.0.0")
+              
+              if [ "$PUBLISHED_PKG_VERSION" = "$PACKAGE_VERSION" ]; then
+                echo "✅ $PACKAGE_NAME $PACKAGE_VERSION is already published, skipping..."
+              else
+                # 更新依赖到已发布的主包版本
+                echo "Updating dependency to flutter_dev_panel: ^$MAIN_VERSION"
+                cp pubspec.yaml pubspec.yaml.bak
+                sed "s|flutter_dev_panel:.*|flutter_dev_panel: ^$MAIN_VERSION|g" pubspec.yaml.bak | grep -v "path:" > pubspec.yaml
+                
+                echo "📦 Publishing $PACKAGE_NAME $PACKAGE_VERSION..."
+                dart pub publish --force || echo "⚠️ Failed to publish $PACKAGE_NAME, continuing..."
+                
+                # 恢复原始文件
+                mv pubspec.yaml.bak pubspec.yaml
+              fi
+              
+              cd ../..
             fi
           done
           
-          if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
-            echo "⚠️ Warning: Reached maximum wait time, attempting to publish sub-packages anyway..."
-          fi
-          
-          # 发布子包
-          echo "Publishing sub-packages..."
-          dart run melos publish --no-dry-run --yes --no-published
+          echo ""
+          echo "🎉 Publishing process completed!"
       
       # Summary
       - name: Generate Summary

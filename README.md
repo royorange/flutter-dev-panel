@@ -49,13 +49,13 @@ A powerful, zero-intrusion debugging panel for Flutter applications with modular
 
 ```yaml
 dependencies:
-  flutter_dev_panel: ^1.1.0
+  flutter_dev_panel: ^1.1.1
   
   # Add modules as needed
-  flutter_dev_panel_console: ^1.1.0    # Logging
-  flutter_dev_panel_network: ^1.1.0    # Network monitoring
-  flutter_dev_panel_performance: ^1.1.0 # Performance tracking
-  flutter_dev_panel_device: ^1.1.0      # Device info
+  flutter_dev_panel_console: ^1.1.1    # Logging
+  flutter_dev_panel_network: ^1.1.1    # Network monitoring
+  flutter_dev_panel_performance: ^1.1.1 # Performance tracking
+  flutter_dev_panel_device: ^1.1.1      # Device info
 ```
 
 ### Basic Setup
