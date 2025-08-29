@@ -1,3 +1,7 @@
+## 1.1.2
+
+ - Bump "flutter_dev_panel_device" to `1.1.2`.
+
 ## 1.1.1
 
  - **FIX**: overflow issue. ([47a234f2](https://github.com/royorange/flutter_dev_panel/commit/47a234f2218012592a6747426b28b1f25ad07214))

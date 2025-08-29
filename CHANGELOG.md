@@ -15,6 +15,51 @@ Packages with breaking changes:
 
 Packages with other changes:
 
+ - [`flutter_dev_panel` - `v1.1.2`](#flutter_dev_panel---v112)
+ - [`flutter_dev_panel_console` - `v1.1.2`](#flutter_dev_panel_console---v112)
+ - [`flutter_dev_panel_network` - `v1.1.2`](#flutter_dev_panel_network---v112)
+ - [`flutter_dev_panel_device` - `v1.1.2`](#flutter_dev_panel_device---v112)
+ - [`flutter_dev_panel_performance` - `v1.1.2`](#flutter_dev_panel_performance---v112)
+
+---
+
+#### `flutter_dev_panel` - `v1.1.2`
+
+ - **FIX**: ci. ([b0e49101](https://github.com/royorange/flutter_dev_panel/commit/b0e49101bcdd1f0a525ee093bf198ba90c0d5023))
+
+#### `flutter_dev_panel_console` - `v1.1.2`
+
+ - Bump "flutter_dev_panel_console" to `1.1.2`.
+
+#### `flutter_dev_panel_network` - `v1.1.2`
+
+ - **FIX**: ci. ([b0e49101](https://github.com/royorange/flutter_dev_panel/commit/b0e49101bcdd1f0a525ee093bf198ba90c0d5023))
+
+#### `flutter_dev_panel_device` - `v1.1.2`
+
+ - Bump "flutter_dev_panel_device" to `1.1.2`.
+
+#### `flutter_dev_panel_performance` - `v1.1.2`
+
+ - Bump "flutter_dev_panel_performance" to `1.1.2`.
+
+## 1.1.2
+
+ - **FIX**: ci. ([b0e49101](https://github.com/royorange/flutter_dev_panel/commit/b0e49101bcdd1f0a525ee093bf198ba90c0d5023))
+
+
+## 2025-08-29
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
  - [`flutter_dev_panel` - `v1.1.1`](#flutter_dev_panel---v111)
  - [`flutter_dev_panel_console` - `v1.1.1`](#flutter_dev_panel_console---v111)
  - [`flutter_dev_panel_network` - `v1.1.1`](#flutter_dev_panel_network---v111)
