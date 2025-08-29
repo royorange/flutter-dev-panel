@@ -1,3 +1,7 @@
+## 1.0.3
+
+ - Update a dependency to the latest release.
+
 ## 1.0.2
 
  - **FIX**: 优化日志. ([4c73ba3d](https://github.com/royorange/flutter_dev_panel/commit/4c73ba3d25787489a7823ecf4a5e2529757bb4a7))

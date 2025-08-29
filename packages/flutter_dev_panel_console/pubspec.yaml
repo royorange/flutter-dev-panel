@@ -1,6 +1,6 @@
 name: flutter_dev_panel_console
 description: Console/Logs module for Flutter Dev Panel
-version: 1.0.2
+version: 1.0.3
 homepage: https://github.com/royorange/flutter_dev_panel
 
 environment:
