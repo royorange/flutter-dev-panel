@@ -1,3 +1,8 @@
+## 1.1.0
+
+ - Update to match main package version 1.1.0
+ - Update dependencies
+
 ## 1.0.4
 
  - Update a dependency to the latest release.

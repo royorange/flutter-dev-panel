@@ -203,11 +203,18 @@ jobs:
         run: |
           export PATH="$PATH:$HOME/.pub-cache/bin"
           
-          # 先发布主包
-          echo "Publishing main package first..."
-          cd .
-          dart pub publish --force
-          cd -
+          # 检查主包是否已经发布
+          MAIN_VERSION=$(grep "^version:" pubspec.yaml | cut -d' ' -f2)
+          echo "Checking if main package flutter_dev_panel $MAIN_VERSION is already published..."
+          
+          if flutter pub cache add flutter_dev_panel:$MAIN_VERSION 2>/dev/null; then
+            echo "✅ Main package flutter_dev_panel $MAIN_VERSION is already published, skipping..."
+          else
+            echo "Publishing main package first..."
+            cd .
+            dart pub publish --force
+            cd -
+          fi
           
           # 等待 pub.dev 同步（每5秒检查一次，最多2分钟）
           echo "Waiting for pub.dev to sync main package..."
