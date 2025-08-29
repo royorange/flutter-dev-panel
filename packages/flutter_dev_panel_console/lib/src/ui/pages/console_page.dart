@@ -15,6 +15,7 @@ class ConsolePage extends StatefulWidget {
 class _ConsolePageState extends State<ConsolePage> {
   late final ConsoleProvider provider;
   final _searchFocusNode = FocusNode();
+  final _searchController = TextEditingController();
   bool _isSearchFocused = false;
   
   @override
@@ -22,9 +23,11 @@ class _ConsolePageState extends State<ConsolePage> {
     super.initState();
     provider = ConsoleProvider();
     _searchFocusNode.addListener(() {
-      setState(() {
-        _isSearchFocused = _searchFocusNode.hasFocus;
-      });
+      if (_isSearchFocused != _searchFocusNode.hasFocus) {
+        setState(() {
+          _isSearchFocused = _searchFocusNode.hasFocus;
+        });
+      }
     });
     
     // 页面打开时如果启用了自动滚动，延迟滚动到底部
@@ -41,6 +44,7 @@ class _ConsolePageState extends State<ConsolePage> {
   void dispose() {
     provider.dispose();
     _searchFocusNode.dispose();
+    _searchController.dispose();
     super.dispose();
   }
   
@@ -50,51 +54,63 @@ class _ConsolePageState extends State<ConsolePage> {
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
-      body: Column(
-        children: [
-          // Top toolbar
-          _buildToolbar(context),
-          
-          // Filter bar
-          LogFilterBar(provider: provider),
-          
-          // Log list
-          Expanded(
-            child: ListenableBuilder(
-              listenable: provider,
-              builder: (context, _) {
-                if (provider.filteredLogs.isEmpty) {
-                  return _buildEmptyState(context);
-                }
+      resizeToAvoidBottomInset: false, // Don't resize for keyboard
+      body: SafeArea(
+        bottom: false,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Check available height
+            final hasEnoughSpace = constraints.maxHeight > 200;
+            
+            return Column(
+              children: [
+                // Top toolbar - always visible
+                _buildToolbar(context),
                 
-                // 在构建 ListView 后触发自动滚动
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (provider.autoScroll && provider.scrollController.hasClients) {
-                    provider.scrollController.jumpTo(
-                      provider.scrollController.position.maxScrollExtent,
-                    );
-                  }
-                });
+                // Filter bar - only show when there's enough space
+                if (hasEnoughSpace) LogFilterBar(provider: provider),
                 
-                return ListView.builder(
-                  controller: provider.scrollController,
-                  itemCount: provider.filteredLogs.length,
-                  itemBuilder: (context, index) {
-                    final log = provider.filteredLogs[index];
-                    return LogItem(
-                      key: ValueKey('${log.timestamp.millisecondsSinceEpoch}_$index'),
-                      log: log,
-                      provider: provider,
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-          
-          // Bottom status bar
-          _buildStatusBar(context),
-        ],
+                // Log list - use Expanded to fill all remaining space
+                Expanded(
+                  child: ListenableBuilder(
+                    listenable: provider,
+                    builder: (context, _) {
+                      if (provider.filteredLogs.isEmpty) {
+                        return _buildEmptyState(context);
+                      }
+                      
+                      // 在构建 ListView 后触发自动滚动
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (provider.autoScroll && provider.scrollController.hasClients) {
+                          provider.scrollController.jumpTo(
+                            provider.scrollController.position.maxScrollExtent,
+                          );
+                        }
+                      });
+                      
+                      return ListView.builder(
+                        controller: provider.scrollController,
+                        padding: const EdgeInsets.only(bottom: 8),
+                        itemCount: provider.filteredLogs.length,
+                        itemBuilder: (context, index) {
+                          final log = provider.filteredLogs[index];
+                          return LogItem(
+                            key: ValueKey('${log.timestamp.millisecondsSinceEpoch}_$index'),
+                            log: log,
+                            provider: provider,
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+                
+                // Bottom status bar - only show when there's enough space
+                if (hasEnoughSpace) _buildStatusBar(context),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -131,62 +147,83 @@ class _ConsolePageState extends State<ConsolePage> {
                 ),
                 borderRadius: BorderRadius.circular(18),
               ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.search,
-                    size: 18,
-                    color: _isSearchFocused
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      focusNode: _searchFocusNode,
-                      onChanged: (value) {
-                        provider.setSearchText(value);
-                      },
-                      decoration: InputDecoration(
-                        hintText: 'Search logs...',
-                        hintStyle: TextStyle(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
-                        ),
-                        filled: true,
-                        fillColor: Colors.transparent,
-                        border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        errorBorder: InputBorder.none,
-                        disabledBorder: InputBorder.none,
-                        focusedErrorBorder: InputBorder.none,
-                        contentPadding: EdgeInsets.zero,
-                        isDense: true,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  // During folding animation, width might be very small
+                  if (constraints.maxWidth < 50) {
+                    // Just show search icon when space is too small
+                    return Center(
+                      child: Icon(
+                        Icons.search,
+                        size: 18,
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                       ),
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                  ),
-                  ListenableBuilder(
-                    listenable: provider,
-                    builder: (context, _) {
-                      if (provider.searchText.isNotEmpty) {
-                        return IconButton(
-                          icon: Icon(
-                            Icons.clear,
-                            size: 18,
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                          ),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          onPressed: () {
-                            provider.setSearchText('');
+                    );
+                  }
+                  
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.search,
+                        size: 18,
+                        color: _isSearchFocused
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: _searchController,
+                          focusNode: _searchFocusNode,
+                          onChanged: (value) {
+                            provider.setSearchText(value);
                           },
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    },
-                  ),
-                ],
+                          textInputAction: TextInputAction.search,
+                          keyboardType: TextInputType.text,
+                          decoration: InputDecoration(
+                            hintText: 'Search logs...',
+                            hintStyle: TextStyle(
+                              color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                            ),
+                            filled: true,
+                            fillColor: Colors.transparent,
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            errorBorder: InputBorder.none,
+                            disabledBorder: InputBorder.none,
+                            focusedErrorBorder: InputBorder.none,
+                            contentPadding: EdgeInsets.zero,
+                            isDense: true,
+                          ),
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                      ),
+                      ListenableBuilder(
+                        listenable: provider,
+                        builder: (context, _) {
+                          if (provider.searchText.isNotEmpty) {
+                            return IconButton(
+                              icon: Icon(
+                                Icons.clear,
+                                size: 18,
+                                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                              ),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              onPressed: () {
+                                _searchController.clear();
+                                provider.setSearchText('');
+                              },
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ),
@@ -264,6 +301,7 @@ class _ConsolePageState extends State<ConsolePage> {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     
     return Container(
+      constraints: const BoxConstraints(minHeight: 40),
       padding: EdgeInsets.only(
         left: 16,
         right: 16,

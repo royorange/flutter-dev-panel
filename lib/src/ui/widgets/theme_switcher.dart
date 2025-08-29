@@ -55,9 +55,12 @@ class ThemeSwitcher extends StatelessWidget {
                             children: [
                               _buildThemeIcon(themeConfig),
                               const SizedBox(width: 8),
-                              Text(
-                                themeConfig.name,
-                                style: theme.textTheme.bodyMedium,
+                              Flexible(
+                                child: Text(
+                                  themeConfig.name,
+                                  style: theme.textTheme.bodyMedium,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
                             ],
                           ),

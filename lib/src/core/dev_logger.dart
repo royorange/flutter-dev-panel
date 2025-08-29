@@ -171,6 +171,9 @@ class DevLogger {
   void _setupErrorHandlers() {
     if (!kReleaseMode) {
       // 1. Capture Flutter framework errors (synchronous)
+      // Store the original handler
+      final originalOnError = FlutterError.onError;
+      
       FlutterError.onError = (FlutterErrorDetails details) {
         // Use Flutter's built-in toString() which provides the complete formatted error
         final String fullErrorDetails = details.toString();
@@ -190,8 +193,13 @@ class DevLogger {
           stackTrace: fullErrorDetails,
         );
         
-        // Still present the error for console output
-        FlutterError.presentError(details);
+        // Call the original handler if it exists (for console output)
+        if (originalOnError != null) {
+          originalOnError(details);
+        } else {
+          // Fallback to presentError if no original handler
+          FlutterError.presentError(details);
+        }
       };
       
       // 2. Use PlatformDispatcher for comprehensive error capture (async and uncaught)

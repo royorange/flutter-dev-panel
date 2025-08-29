@@ -30,11 +30,15 @@ class EnvironmentSwitcher extends StatelessWidget {
                 color: theme.colorScheme.primary,
               ),
               const SizedBox(width: 8),
-              Text(
-                'Environment:',
-                style: theme.textTheme.bodyMedium,
+              Flexible(
+                flex: 0,
+                child: Text(
+                  'Env:',
+                  style: theme.textTheme.bodyMedium,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               
               // Environment selector
               Expanded(
