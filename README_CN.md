@@ -48,8 +48,8 @@
 
 ```yaml
 dependencies:
-  flutter_dev_panel: ^1.1.2
-  
+  flutter_dev_panel: ^1.1.3
+
   # 按需添加模块
   flutter_dev_panel_console: ^1.1.2    # 日志
   flutter_dev_panel_network: ^1.1.2    # 网络监控
