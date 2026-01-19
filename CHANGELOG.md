@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.1.3
+
+- **FIX**: Environment variables now reload from .env files on app restart
+- **FEAT**: Add manual editing support for environment variables in the panel
+
 ## 2025-08-29
 
 ### Changes
