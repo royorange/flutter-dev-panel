@@ -176,6 +176,23 @@ class _EnvironmentVariablesDialogState extends State<EnvironmentVariablesDialog>
                                   ),
                                 ),
                               ),
+                              const SizedBox(width: 8),
+                              InkWell(
+                                onTap: () => _showEditDialog(
+                                  context,
+                                  entry.key,
+                                  entry.value,
+                                ),
+                                borderRadius: BorderRadius.circular(4),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(4),
+                                  child: Icon(
+                                    Icons.edit_outlined,
+                                    size: 16,
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         );
@@ -196,5 +213,150 @@ class _EnvironmentVariablesDialogState extends State<EnvironmentVariablesDialog>
       ],
     );
   }
-  
+
+  void _showEditDialog(BuildContext context, String key, dynamic value) {
+    showDialog(
+      context: context,
+      builder: (context) => _EditVariableDialog(
+        variableKey: key,
+        initialValue: value,
+      ),
+    );
+  }
 }
+
+/// Dialog for editing a single environment variable
+class _EditVariableDialog extends StatefulWidget {
+  final String variableKey;
+  final dynamic initialValue;
+
+  const _EditVariableDialog({
+    required this.variableKey,
+    required this.initialValue,
+  });
+
+  @override
+  State<_EditVariableDialog> createState() => _EditVariableDialogState();
+}
+
+class _EditVariableDialogState extends State<_EditVariableDialog> {
+  late TextEditingController _controller;
+  late _ValueType _valueType;
+
+  @override
+  void initState() {
+    super.initState();
+    _valueType = _detectValueType(widget.initialValue);
+    _controller = TextEditingController(
+      text: widget.initialValue.toString(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  _ValueType _detectValueType(dynamic value) {
+    if (value is bool) return _ValueType.boolean;
+    if (value is int) return _ValueType.integer;
+    if (value is double) return _ValueType.decimal;
+    return _ValueType.string;
+  }
+
+  dynamic _parseValue(String text) {
+    switch (_valueType) {
+      case _ValueType.boolean:
+        final lower = text.toLowerCase();
+        return lower == 'true' || lower == '1' || lower == 'yes';
+      case _ValueType.integer:
+        return int.tryParse(text) ?? 0;
+      case _ValueType.decimal:
+        return double.tryParse(text) ?? 0.0;
+      case _ValueType.string:
+        return text;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return AlertDialog(
+      title: Text('Edit ${widget.variableKey}'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Value type indicator
+          Text(
+            'Type: ${_valueType.name}',
+            style: TextStyle(
+              fontSize: 12,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Input field
+          if (_valueType == _ValueType.boolean)
+            DropdownButtonFormField<String>(
+              value: _controller.text.toLowerCase() == 'true' ||
+                      _controller.text == '1' ||
+                      _controller.text.toLowerCase() == 'yes'
+                  ? 'true'
+                  : 'false',
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
+              items: const [
+                DropdownMenuItem(value: 'true', child: Text('true')),
+                DropdownMenuItem(value: 'false', child: Text('false')),
+              ],
+              onChanged: (value) {
+                if (value != null) {
+                  _controller.text = value;
+                }
+              },
+            )
+          else
+            TextField(
+              controller: _controller,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
+              keyboardType: _valueType == _ValueType.integer
+                  ? TextInputType.number
+                  : _valueType == _ValueType.decimal
+                      ? const TextInputType.numberWithOptions(decimal: true)
+                      : TextInputType.text,
+              maxLines: _valueType == _ValueType.string ? 3 : 1,
+            ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () {
+            final newValue = _parseValue(_controller.text);
+            EnvironmentManager.instance.updateVariable(
+              widget.variableKey,
+              newValue,
+            );
+            Navigator.of(context).pop();
+          },
+          child: const Text('Save'),
+        ),
+      ],
+    );
+  }
+}
+
+enum _ValueType { string, integer, decimal, boolean }

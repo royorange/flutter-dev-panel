@@ -236,16 +236,11 @@ DEFAULT_LANGUAGE=en
     }
     
     // Override with .env files (highest priority)
+    // .env files should completely replace the environment configuration
+    // to ensure that changes in .env files take effect on restart
     if (fromEnvFiles != null) {
       for (final env in fromEnvFiles) {
-        // Merge variables if environment already exists
-        if (merged.containsKey(env.name)) {
-          final existing = merged[env.name]!;
-          final mergedVars = {...existing.variables, ...env.variables};
-          merged[env.name] = existing.copyWith(variables: mergedVars);
-        } else {
-          merged[env.name] = env;
-        }
+        merged[env.name] = env;
       }
     }
     
