@@ -1,1 +1,22 @@
+# Files not needed in the published package
 CLAUDE.md
+GRAPHQL_IMPROVEMENTS.md
+
+# Sub-packages (published separately)
+packages/
+
+# Example app
+example/
+
+# Screenshots (referenced via GitHub URLs in README)
+screenshots/
+
+# Scripts
+publish.sh
+release.sh
+
+# Melos
+melos.yaml
+
+# CI
+.github/
