@@ -1,3 +1,7 @@
+## 1.1.3
+
+ - Minimum Flutter version raised to 3.13.0
+
 ## 1.1.2
 
  - Bump "flutter_dev_panel_device" to `1.1.2`.

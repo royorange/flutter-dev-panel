@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.1.4
+
+- **FIX**: Use AssetManifest API for .env file discovery, fixing iOS compatibility
+- **BREAKING**: Minimum Flutter version raised to 3.13.0
+
 ## 1.1.3
 
 - **FIX**: Environment variables now reload from .env files on app restart

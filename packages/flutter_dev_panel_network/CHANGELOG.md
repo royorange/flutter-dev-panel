@@ -1,3 +1,7 @@
+## 1.1.3
+
+ - Minimum Flutter version raised to 3.13.0
+
 ## 1.1.2
 
  - **FIX**: ci. ([b0e49101](https://github.com/royorange/flutter_dev_panel/commit/b0e49101bcdd1f0a525ee093bf198ba90c0d5023))
