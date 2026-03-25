@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.1.5
+
+- **PERF**: Add cached error/warning counts to DevLogger for O(1) FAB updates
+- **PERF**: Incremental stat tracking on log add/remove/clear
+
 ## 1.1.4
 
 - **FIX**: Use AssetManifest API for .env file discovery, fixing iOS compatibility

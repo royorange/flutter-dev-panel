@@ -1,3 +1,12 @@
+## 1.1.4
+
+- **PERF**: Cache request stats with incremental updates (O(1) vs O(n) per rebuild)
+- **PERF**: Debounce SharedPreferences writes (500ms) to reduce disk I/O
+- **PERF**: Incremental FAB metrics scan with early exit
+- **FIX**: Evicted requests not decrementing cached stats
+- **FIX**: Dispose could save empty list after clear
+- **FIX**: Cancelled requests not updating session stats
+
 ## 1.1.3
 
  - Minimum Flutter version raised to 3.13.0

@@ -1,3 +1,10 @@
+## 1.1.4
+
+- **PERF**: Use cached error/warning counts from DevLogger for O(1) FAB updates
+- **PERF**: Cache log statistics in ConsoleProvider with incremental updates
+- **PERF**: Remove duplicate addPostFrameCallback stacking in console page
+- **PERF**: Use static DateFormat instances in LogItem and LogDetailSheet
+
 ## 1.1.3
 
  - Minimum Flutter version raised to 3.13.0
