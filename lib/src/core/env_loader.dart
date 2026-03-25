@@ -111,32 +111,41 @@ class EnvLoader {
   
   /// 从 AssetManifest 获取所有 .env 文件
   static Future<List<String>> _getEnvFilesFromAssets() async {
+    // Flutter 3.13+ 优先使用 AssetManifest API（支持 AssetManifest.bin）
     try {
-      // 使用 rootBundle 获取 AssetManifest
-      final String manifestContent = await rootBundle.loadString('AssetManifest.json');
-      final Map<String, dynamic> manifestMap = json.decode(manifestContent);
-      
-      // 筛选出所有 .env 文件
-      final envFiles = <String>[];
-      for (final String key in manifestMap.keys) {
-        // 匹配 .env 或 .env.* 文件（在根目录）
-        if (key.startsWith('.env') && !key.contains('/')) {
-          envFiles.add(key);
-        }
+      final assetManifest =
+          await AssetManifest.loadFromAssetBundle(rootBundle);
+      final allAssets = assetManifest.listAssets();
+      return _filterEnvFiles(allAssets);
+    } catch (_) {
+      // 回退到旧版 JSON 方式（Flutter 3.10 ~ 3.12）
+      try {
+        final String manifestContent =
+            await rootBundle.loadString('AssetManifest.json');
+        final Map<String, dynamic> manifestMap =
+            json.decode(manifestContent) as Map<String, dynamic>;
+        return _filterEnvFiles(manifestMap.keys);
+      } catch (_) {
+        return [];
       }
-      
-      // 排序：.env.* 文件优先，.env 最后
-      envFiles.sort((a, b) {
-        if (a == '.env') return 1;
-        if (b == '.env') return -1;
-        return a.compareTo(b);
-      });
-      
-      return envFiles;
-    } catch (e) {
-      // 如果无法读取 manifest，返回空列表
-      return [];
     }
+  }
+
+  /// 从资源列表中筛选并排序 .env 文件
+  static List<String> _filterEnvFiles(Iterable<String> assets) {
+    final envFiles = <String>[];
+    for (final key in assets) {
+      if (key.startsWith('.env') && !key.contains('/')) {
+        envFiles.add(key);
+      }
+    }
+    // 排序：.env.* 文件优先，.env 最后
+    envFiles.sort((a, b) {
+      if (a == '.env') return 1;
+      if (b == '.env') return -1;
+      return a.compareTo(b);
+    });
+    return envFiles;
   }
   
   /// 从文件名提取环境名
