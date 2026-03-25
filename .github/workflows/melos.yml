@@ -194,29 +194,16 @@ jobs:
 
           if [[ "${{ github.event.inputs.action }}" == *"publish"* ]]; then
             echo ""
-            echo "Preparing packages for dry-run validation..."
+            echo "Validating main package (dry-run)..."
+            # Only dry-run the main package. Sub-packages depend on the main
+            # package which is not yet on pub.dev, so their dry-run will always
+            # fail with dependency resolution errors. The real publish flow
+            # handles this by publishing the main package first, then sub-packages.
+            dart pub publish --dry-run
 
-            # Remove pubspec_overrides.yaml (same as real publish)
-            find . -name "pubspec_overrides.yaml" -type f -delete
-
-            # Replace path dependencies with hosted versions for sub-packages
-            MAIN_VERSION=$(grep "^version:" pubspec.yaml | cut -d' ' -f2)
-            for pkg_dir in packages/*/; do
-              if [ -f "$pkg_dir/pubspec.yaml" ]; then
-                cp "$pkg_dir/pubspec.yaml" "$pkg_dir/pubspec.yaml.bak"
-                sed "s|flutter_dev_panel:.*|flutter_dev_panel: ^$MAIN_VERSION|g" "$pkg_dir/pubspec.yaml.bak" | grep -v "path:" > "$pkg_dir/pubspec.yaml"
-              fi
-            done
-
-            echo "Would publish the following packages:"
-            dart run melos publish --dry-run --yes
-
-            # Restore original pubspec.yaml files
-            for pkg_dir in packages/*/; do
-              if [ -f "$pkg_dir/pubspec.yaml.bak" ]; then
-                mv "$pkg_dir/pubspec.yaml.bak" "$pkg_dir/pubspec.yaml"
-              fi
-            done
+            echo ""
+            echo "Packages that would be published:"
+            dart run melos list --long
           fi
       
       - name: Prepare for Publishing  
