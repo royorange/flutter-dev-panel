@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/network_request.dart';
 
@@ -21,7 +22,7 @@ class NetworkStorage {
       await prefs.setString(_storageKey, jsonString);
     } catch (e) {
       // 忽略存储错误，避免影响主功能
-      print('Failed to save network requests: $e');
+      debugPrint('Failed to save network requests: $e');
     }
   }
   
@@ -40,7 +41,7 @@ class NetworkStorage {
         return _requestFromJson(json as Map<String, dynamic>);
       }).toList();
     } catch (e) {
-      print('Failed to load network requests: $e');
+      debugPrint('Failed to load network requests: $e');
       return [];
     }
   }
@@ -51,7 +52,7 @@ class NetworkStorage {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_storageKey);
     } catch (e) {
-      print('Failed to clear network requests: $e');
+      debugPrint('Failed to clear network requests: $e');
     }
   }
   
@@ -61,7 +62,7 @@ class NetworkStorage {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_maxRequestsKey, maxRequests);
     } catch (e) {
-      print('Failed to save max requests: $e');
+      debugPrint('Failed to save max requests: $e');
     }
   }
   
@@ -71,7 +72,7 @@ class NetworkStorage {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getInt(_maxRequestsKey) ?? 100;
     } catch (e) {
-      print('Failed to load max requests: $e');
+      debugPrint('Failed to load max requests: $e');
       return 100;
     }
   }

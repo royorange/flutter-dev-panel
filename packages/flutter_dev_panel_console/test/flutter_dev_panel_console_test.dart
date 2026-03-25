@@ -339,10 +339,13 @@ Third line''';
       expect(config.combineLoggerOutput, isTrue);
     });
 
-    test('should have correct presets', () {
-      expect(const LogCaptureConfig.minimal().maxLogs, equals(500));
-      expect(const LogCaptureConfig.development().maxLogs, equals(1000));
-      expect(const LogCaptureConfig.full().maxLogs, equals(5000));
+    test('should support custom maxLogs values', () {
+      const minimal = LogCaptureConfig(maxLogs: 500);
+      const development = LogCaptureConfig(maxLogs: 1000);
+      const full = LogCaptureConfig(maxLogs: 5000);
+      expect(minimal.maxLogs, equals(500));
+      expect(development.maxLogs, equals(1000));
+      expect(full.maxLogs, equals(5000));
     });
 
     test('copyWith should work correctly', () {

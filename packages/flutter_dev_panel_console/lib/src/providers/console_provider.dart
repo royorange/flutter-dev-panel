@@ -7,15 +7,20 @@ class ConsoleProvider extends ChangeNotifier {
   /// 日志列表
   List<LogEntry> _logs = [];
   List<LogEntry> get logs => List.unmodifiable(_logs);
-  
+
   /// 过滤后的日志列表
   List<LogEntry> _filteredLogs = [];
   List<LogEntry> get filteredLogs => List.unmodifiable(_filteredLogs);
-  
+
+  /// 缓存的日志级别统计（避免每次 O(n) 遍历）
+  final Map<LogLevel, int> _cachedStats = {
+    for (final level in LogLevel.values) level: 0,
+  };
+
   /// 当前选中的日志级别过滤
   LogLevel? _selectedLevel;
   LogLevel? get selectedLevel => _selectedLevel;
-  
+
   /// 搜索关键词
   String _searchText = '';
   String get searchText => _searchText;
@@ -64,8 +69,9 @@ class ConsoleProvider extends ChangeNotifier {
   void _loadExistingLogs() {
     final existingLogs = DevLogger.instance.logs;
     _logs = existingLogs.toList();
+    _rebuildCachedStats();
     _applyFilters();
-    
+
     // 加载完成后如果启用了自动滚动，延迟滚动到底部
     if (_autoScroll && _logs.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -103,18 +109,28 @@ class ConsoleProvider extends ChangeNotifier {
   /// 处理待添加的日志
   void _processPendingLogs() {
     if (_pendingLogs.isEmpty) return;
-    
+
+    // 增量更新缓存统计
+    for (final log in _pendingLogs) {
+      _cachedStats[log.level] = (_cachedStats[log.level] ?? 0) + 1;
+    }
+
     _logs.addAll(_pendingLogs);
-    
+
     // 使用配置中的最大日志数量
     final maxLogs = DevLogger.instance.config.maxLogs;
     if (_logs.length > maxLogs) {
+      // 扣减被驱逐日志的缓存统计
+      final evicted = _logs.sublist(0, _logs.length - maxLogs);
+      for (final log in evicted) {
+        _cachedStats[log.level] = (_cachedStats[log.level] ?? 1) - 1;
+      }
       _logs = _logs.sublist(_logs.length - maxLogs);
     }
-    
+
     _pendingLogs.clear();
     _applyFilters();
-    
+
     // 仅在启用自动滚动时滚动到底部
     if (_autoScroll) {
       _scrollToBottom();
@@ -174,6 +190,9 @@ class ConsoleProvider extends ChangeNotifier {
     _logs.clear();
     _filteredLogs.clear();
     _pendingLogs.clear();
+    for (final level in LogLevel.values) {
+      _cachedStats[level] = 0;
+    }
     DevLogger.instance.clear();
     notifyListeners();
   }
@@ -250,12 +269,22 @@ class ConsoleProvider extends ChangeNotifier {
     }
   }
   
-  /// 获取日志统计信息
-  Map<LogLevel, int> getLogStatistics() {
-    final stats = <LogLevel, int>{};
+  /// 获取日志统计信息（O(1)，使用缓存）
+  Map<LogLevel, int> getLogStatistics() => Map.unmodifiable(_cachedStats);
+
+  /// 快捷获取错误数（FAB 使用）
+  int get errorCount => _cachedStats[LogLevel.error] ?? 0;
+
+  /// 快捷获取警告数（FAB 使用）
+  int get warningCount => _cachedStats[LogLevel.warning] ?? 0;
+
+  /// 重建缓存统计（仅在初始化或批量操作时调用）
+  void _rebuildCachedStats() {
     for (final level in LogLevel.values) {
-      stats[level] = _logs.where((log) => log.level == level).length;
+      _cachedStats[level] = 0;
     }
-    return stats;
+    for (final log in _logs) {
+      _cachedStats[log.level] = (_cachedStats[log.level] ?? 0) + 1;
+    }
   }
 }

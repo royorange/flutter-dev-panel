@@ -28,13 +28,10 @@ class ConsoleModule extends DevModule {
     if (DevLogger.instance.isPaused) {
       return null;
     }
-    
-    // 使用文字显示，更直观
-    final allLogs = DevLogger.instance.logs;
-    final errorCount =
-        allLogs.where((log) => log.level == LogLevel.error).length;
-    final warningCount =
-        allLogs.where((log) => log.level == LogLevel.warning).length;
+
+    // 使用 DevLogger 缓存的统计数据，O(1) 获取
+    final errorCount = DevLogger.instance.errorCount;
+    final warningCount = DevLogger.instance.warningCount;
 
     if (errorCount > 0 || warningCount > 0) {
       return Flexible(

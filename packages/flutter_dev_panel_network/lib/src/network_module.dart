@@ -281,14 +281,16 @@ class _NetworkFabContent extends StatefulWidget {
 
 class _NetworkFabContentState extends State<_NetworkFabContent> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
-  
-  // 最近一批请求的统计（惰性计算）
+
+  // 最近一批请求的统计
   int _recentRequestCount = 0;
   double _recentTotalSize = 0; // KB
   int _recentAvgDuration = 0; // ms
-  DateTime? _lastBatchEndTime; // 最后一批请求的结束时间
   bool _hasBatchData = false; // 是否有批次数据
-  
+
+  // 跟踪上次处理的请求数量，实现增量扫描
+  int _lastProcessedCount = 0;
+
   @override
   void initState() {
     super.initState();
@@ -296,68 +298,71 @@ class _NetworkFabContentState extends State<_NetworkFabContent> with SingleTicke
       duration: const Duration(seconds: 1),
       vsync: this,
     );
-    widget.controller.addListener(_updateMetrics);
   }
-  
+
   @override
   void dispose() {
-    widget.controller.removeListener(_updateMetrics);
     _animationController.dispose();
     super.dispose();
   }
-  
-  void _updateMetrics({bool skipSetState = false}) {
-    // 策略：显示最近一批请求的统计，持续显示直到有新批次
+
+  /// 增量更新指标：只在检测到新数据时才扫描时间窗口
+  void _updateMetricsIncremental() {
+    final allRequests = widget.controller.allRequests;
+    final currentCount = allRequests.length;
     final now = DateTime.now();
-    
-    // 定义批次窗口：3秒内的请求算作一批
-    final batchWindow = const Duration(seconds: 3);
-    final recentThreshold = now.subtract(batchWindow);
-    
-    // 计算当前时间窗口内的请求
-    int currentBatchCount = 0;
-    double currentBatchSize = 0;
-    int currentTotalDuration = 0;
-    int currentDurationCount = 0;
-    DateTime? latestEndTime;
-    
-    for (final req in widget.controller.allRequests) {
+    final recentThreshold = now.subtract(const Duration(seconds: 3));
+
+    // 快速检查：只看最新的几条请求是否在时间窗口内
+    final newItems = currentCount - _lastProcessedCount;
+    final scanCount = newItems > 0 ? newItems : 1;
+
+    bool hasNewBatchData = false;
+    for (int i = 0; i < scanCount && i < currentCount; i++) {
+      final req = allRequests[i];
       if (req.endTime != null && req.endTime!.isAfter(recentThreshold)) {
-        currentBatchCount++;
-        if (req.responseSize != null) {
-          currentBatchSize += req.responseSize! / 1024; // 转换为KB
-        }
-        if (req.duration != null) {
-          currentTotalDuration += req.duration!.inMilliseconds;
-          currentDurationCount++;
-        }
-        // 记录最新的结束时间
-        if (latestEndTime == null || req.endTime!.isAfter(latestEndTime)) {
-          latestEndTime = req.endTime;
-        }
+        hasNewBatchData = true;
+        break;
       }
     }
-    
-    // 如果有新的批次数据，更新统计
-    if (currentBatchCount > 0) {
-      _recentRequestCount = currentBatchCount;
-      _recentTotalSize = currentBatchSize;
-      if (currentDurationCount > 0) {
-        _recentAvgDuration = currentTotalDuration ~/ currentDurationCount;
+
+    // 只有检测到新的批次数据时才重新计算窗口内的统计
+    if (hasNewBatchData) {
+      int batchCount = 0;
+      double batchSize = 0;
+      int totalDuration = 0;
+      int durationCount = 0;
+
+      // 列表按时间倒序，超出窗口后提前退出
+      for (final req in allRequests) {
+        if (req.endTime != null && req.endTime!.isAfter(recentThreshold)) {
+          batchCount++;
+          if (req.responseSize != null) {
+            batchSize += req.responseSize! / 1024;
+          }
+          if (req.duration != null) {
+            totalDuration += req.duration!.inMilliseconds;
+            durationCount++;
+          }
+        } else if (req.endTime != null) {
+          // 已超出时间窗口，后续更旧的请求无需检查
+          break;
+        }
       }
-      _lastBatchEndTime = latestEndTime;
-      _hasBatchData = true;
+
+      if (batchCount > 0) {
+        _recentRequestCount = batchCount;
+        _recentTotalSize = batchSize;
+        if (durationCount > 0) {
+          _recentAvgDuration = totalDuration ~/ durationCount;
+        }
+        _hasBatchData = true;
+      }
     }
-    // 否则保持之前的统计数据（如果有）
-    // 这样即使超过3秒，统计信息也会保持显示
-    
-    // 触发UI更新（除非在 build 中调用）
-    if (!skipSetState && mounted) {
-      setState(() {});
-    }
+
+    _lastProcessedCount = currentCount;
   }
-  
-  
+
   String _formatSize(double sizeKB) {
     if (sizeKB < 1024) return '${sizeKB.toStringAsFixed(0)}K';
     if (sizeKB < 10240) return '${(sizeKB / 1024).toStringAsFixed(1)}M';
@@ -375,8 +380,8 @@ class _NetworkFabContentState extends State<_NetworkFabContent> with SingleTicke
     return ListenableBuilder(
       listenable: widget.controller,
       builder: (context, _) {
-        // 每次 build 时都重新计算最近的请求统计（跳过 setState）
-        _updateMetrics(skipSetState: true);
+        // 增量更新最近的请求统计
+        _updateMetricsIncremental();
         
         // 使用会话统计而不是总统计
         final pendingCount = widget.controller.sessionPendingCount;

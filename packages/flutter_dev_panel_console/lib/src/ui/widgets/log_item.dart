@@ -11,6 +11,9 @@ class LogItem extends StatelessWidget {
   final ConsoleProvider provider;
   final VoidCallback? onTap;
 
+  // 静态 DateFormat 实例，避免每个 LogItem build 都创建新实例
+  static final _timeFormat = DateFormat('HH:mm:ss.SSS');
+
   const LogItem({
     super.key,
     required this.log,
@@ -34,7 +37,6 @@ class LogItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final levelColor = provider.getLevelColor(log.level);
-    final timeFormat = DateFormat('HH:mm:ss.SSS');
 
     return InkWell(
       onTap: onTap ?? () => _showLogDetail(context),
@@ -77,7 +79,7 @@ class LogItem extends StatelessWidget {
               height: 24, // 与级别标识相同高度
               alignment: Alignment.center, // 垂直居中
               child: Text(
-                timeFormat.format(log.timestamp),
+                _timeFormat.format(log.timestamp),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                   fontFamily: 'monospace',
@@ -179,6 +181,8 @@ class LogDetailSheet extends StatelessWidget {
   final LogEntry log;
   final ConsoleProvider provider;
 
+  static final _detailTimeFormat = DateFormat('yyyy-MM-dd HH:mm:ss.SSS');
+
   const LogDetailSheet({
     super.key,
     required this.log,
@@ -189,7 +193,6 @@ class LogDetailSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final levelColor = provider.getLevelColor(log.level);
-    final timeFormat = DateFormat('yyyy-MM-dd HH:mm:ss.SSS');
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.8,
@@ -268,7 +271,7 @@ class LogDetailSheet extends StatelessWidget {
                   _buildSection(
                     context,
                     title: 'Time',
-                    content: timeFormat.format(log.timestamp),
+                    content: _detailTimeFormat.format(log.timestamp),
                     icon: Icons.access_time,
                   ),
 

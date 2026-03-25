@@ -79,16 +79,6 @@ class _ConsolePageState extends State<ConsolePage> {
                         return _buildEmptyState(context);
                       }
 
-                      // 在构建 ListView 后触发自动滚动
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (provider.autoScroll &&
-                            provider.scrollController.hasClients) {
-                          provider.scrollController.jumpTo(
-                            provider.scrollController.position.maxScrollExtent,
-                          );
-                        }
-                      });
-
                       return ListView.builder(
                         controller: provider.scrollController,
                         padding: const EdgeInsets.only(bottom: 8),

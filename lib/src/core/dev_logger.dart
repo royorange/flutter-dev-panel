@@ -150,19 +150,48 @@ class DevLogger {
     _config = config;
     // Update max logs if changed
     while (_logs.length > config.maxLogs) {
-      _logs.removeFirst();
+      final evicted = _logs.removeFirst();
+      _decrementStats(evicted.level);
     }
     // Save to disk
     _saveConfig();
   }
 
+  /// 增量更新：添加日志时更新统计
+  void _incrementStats(LogLevel level) {
+    if (level == LogLevel.error) {
+      _errorCount++;
+    } else if (level == LogLevel.warning) {
+      _warningCount++;
+    }
+  }
+
+  /// 增量更新：移除日志时更新统计
+  void _decrementStats(LogLevel level) {
+    if (level == LogLevel.error) {
+      _errorCount--;
+    } else if (level == LogLevel.warning) {
+      _warningCount--;
+    }
+  }
+
   final _logs = ListQueue<LogEntry>();
   final _logController = StreamController<LogEntry>.broadcast();
-  
+
+  // 缓存的日志级别统计（避免 FAB 等场景 O(n) 遍历）
+  int _errorCount = 0;
+  int _warningCount = 0;
+
   int get maxLogs => _config.maxLogs;
   Stream<LogEntry> get logStream => _logController.stream;
   List<LogEntry> get logs => _logs.toList();
   int get logCount => _logs.length;
+
+  /// O(1) 获取错误数量（FAB 使用）
+  int get errorCount => _errorCount;
+
+  /// O(1) 获取警告数量（FAB 使用）
+  int get warningCount => _warningCount;
   
   Zone? _printInterceptZone;
   
@@ -377,16 +406,18 @@ class DevLogger {
     );
     
     _logs.addLast(entry);
+    _incrementStats(entry.level);
     if (_logs.length > _config.maxLogs) {
-      _logs.removeFirst();
+      final evicted = _logs.removeFirst();
+      _decrementStats(evicted.level);
     }
-    
+
     _logController.add(entry);
-    
+
     // Notify MonitoringDataProvider when logs change
     // This will trigger FAB update
     MonitoringDataProvider.instance.triggerUpdate();
-    
+
     // Don't print to console to avoid infinite loop when intercepting print
     // The original print will still be called through the Zone
   }
@@ -501,10 +532,12 @@ class DevLogger {
       );
       
       _logs.addLast(entry);
+      _incrementStats(entry.level);
       if (_logs.length > _config.maxLogs) {
-        _logs.removeFirst();
+        final evicted = _logs.removeFirst();
+        _decrementStats(evicted.level);
       }
-      
+
       _logController.add(entry);
       MonitoringDataProvider.instance.triggerUpdate();
       return;
@@ -576,15 +609,17 @@ class DevLogger {
     );
     
     _logs.addLast(entry);
+    _incrementStats(entry.level);
     if (_logs.length > _config.maxLogs) {
-      _logs.removeFirst();
+      final evicted = _logs.removeFirst();
+      _decrementStats(evicted.level);
     }
-    
+
     _logController.add(entry);
-    
+
     // Notify MonitoringDataProvider when logs change
     MonitoringDataProvider.instance.triggerUpdate();
-    
+
     // Clear buffer
     _flutterWarningBuffer.clear();
     _flutterWarningStartTime = null;
@@ -780,16 +815,18 @@ class DevLogger {
     );
     
     _logs.addLast(entry);
+    _incrementStats(entry.level);
     if (_logs.length > _config.maxLogs) {
-      _logs.removeFirst();
+      final evicted = _logs.removeFirst();
+      _decrementStats(evicted.level);
     }
-    
+
     _logController.add(entry);
-    
+
     // Notify MonitoringDataProvider when logs change
     // This will trigger FAB update
     MonitoringDataProvider.instance.triggerUpdate();
-    
+
     // Clear buffer
     _loggerBuffer.clear();
     _loggerBufferStartTime = null;
@@ -870,6 +907,8 @@ class DevLogger {
   
   void clear() {
     _logs.clear();
+    _errorCount = 0;
+    _warningCount = 0;
     // Notify MonitoringDataProvider when logs are cleared
     MonitoringDataProvider.instance.triggerUpdate();
   }
