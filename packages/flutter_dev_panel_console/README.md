@@ -15,10 +15,12 @@ Console/Logs monitoring module for Flutter Dev Panel.
 
 ## Installation
 
+[![flutter_dev_panel version](https://img.shields.io/pub/v/flutter_dev_panel.svg?label=flutter_dev_panel)](https://pub.dev/packages/flutter_dev_panel)
+
 ```yaml
 dependencies:
-  flutter_dev_panel: ^1.0.1
-  flutter_dev_panel_console: ^1.0.1
+  flutter_dev_panel: ^latest_version  # Replace with latest version from badges above
+  flutter_dev_panel_console: ^latest_version
 ```
 
 ## Usage

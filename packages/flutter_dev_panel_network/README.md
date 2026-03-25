@@ -2,7 +2,7 @@
 
 [![pub package](https://img.shields.io/pub/v/flutter_dev_panel_network.svg)](https://pub.dev/packages/flutter_dev_panel_network)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Flutter](https://img.shields.io/badge/Flutter-%E2%89%A53.10.0-blue)](https://flutter.dev)
+[![Flutter](https://img.shields.io/badge/Flutter-%E2%89%A53.13.0-blue)](https://flutter.dev)
 
 Network monitoring module for Flutter Dev Panel that provides unified request tracking across Dio, http package, and GraphQL.
 
@@ -18,10 +18,12 @@ Network monitoring module for Flutter Dev Panel that provides unified request tr
 
 ## Installation
 
+[![flutter_dev_panel version](https://img.shields.io/pub/v/flutter_dev_panel.svg?label=flutter_dev_panel)](https://pub.dev/packages/flutter_dev_panel)
+
 ```yaml
 dependencies:
-  flutter_dev_panel: ^1.0.1
-  flutter_dev_panel_network: ^1.0.1
+  flutter_dev_panel: ^latest_version  # Replace with latest version from badges above
+  flutter_dev_panel_network: ^latest_version
 ```
 
 ## Basic Usage

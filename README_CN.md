@@ -48,13 +48,13 @@
 
 ```yaml
 dependencies:
-  flutter_dev_panel: ^1.1.3
+  flutter_dev_panel: ^latest_version  # 查看上方徽章获取最新版本
 
   # 按需添加模块
-  flutter_dev_panel_console: ^1.1.2    # 日志
-  flutter_dev_panel_network: ^1.1.2    # 网络监控
-  flutter_dev_panel_performance: ^1.1.2 # 性能跟踪
-  flutter_dev_panel_device: ^1.1.2      # 设备信息
+  flutter_dev_panel_console: ^latest_version    # 日志
+  flutter_dev_panel_network: ^latest_version    # 网络监控
+  flutter_dev_panel_performance: ^latest_version # 性能跟踪
+  flutter_dev_panel_device: ^latest_version      # 设备信息
 ```
 
 ### 基本设置

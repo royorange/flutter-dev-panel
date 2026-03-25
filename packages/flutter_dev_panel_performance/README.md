@@ -2,7 +2,7 @@
 
 [![pub package](https://img.shields.io/pub/v/flutter_dev_panel_performance.svg)](https://pub.dev/packages/flutter_dev_panel_performance)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Flutter](https://img.shields.io/badge/Flutter-%E2%89%A53.10.0-blue)](https://flutter.dev)
+[![Flutter](https://img.shields.io/badge/Flutter-%E2%89%A53.13.0-blue)](https://flutter.dev)
 
 A comprehensive performance monitoring module for Flutter Dev Panel that provides real-time FPS tracking, memory monitoring, resource leak detection, and automatic Timer tracking.
 
@@ -30,9 +30,11 @@ A comprehensive performance monitoring module for Flutter Dev Panel that provide
 
 ## Installation
 
+[![flutter_dev_panel version](https://img.shields.io/pub/v/flutter_dev_panel.svg?label=flutter_dev_panel)](https://pub.dev/packages/flutter_dev_panel)
+
 ```yaml
 dependencies:
-  flutter_dev_panel: ^latest_version
+  flutter_dev_panel: ^latest_version  # Replace with latest version from badges above
   flutter_dev_panel_performance: ^latest_version
 ```
 
@@ -359,7 +361,7 @@ class _BadWidgetState extends State<BadWidget> {
 
 ## Requirements
 
-- Flutter ≥3.10.0
+- Flutter ≥3.13.0
 - Dart ≥3.0.0
 - flutter_dev_panel (core package)
 

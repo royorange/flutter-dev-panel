@@ -2,7 +2,7 @@
 
 [![pub package](https://img.shields.io/pub/v/flutter_dev_panel_device.svg)](https://pub.dev/packages/flutter_dev_panel_device)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Flutter](https://img.shields.io/badge/Flutter-%E2%89%A53.10.0-blue)](https://flutter.dev)
+[![Flutter](https://img.shields.io/badge/Flutter-%E2%89%A53.13.0-blue)](https://flutter.dev)
 
 Device information module for Flutter Dev Panel that provides detailed insights into device specifications and system information.
 
@@ -17,10 +17,12 @@ Device information module for Flutter Dev Panel that provides detailed insights 
 
 ## Installation
 
+[![flutter_dev_panel version](https://img.shields.io/pub/v/flutter_dev_panel.svg?label=flutter_dev_panel)](https://pub.dev/packages/flutter_dev_panel)
+
 ```yaml
 dependencies:
-  flutter_dev_panel_device:
-    path: ../packages/flutter_dev_panel_device
+  flutter_dev_panel: ^latest_version  # Replace with latest version from badges above
+  flutter_dev_panel_device: ^latest_version
 ```
 
 ## Usage
