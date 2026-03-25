@@ -11,16 +11,16 @@
 
 <table>
   <tr>
-    <td><img src="screenshots/console-module.jpg" alt="控制台" width="200"/></td>
-    <td><img src="screenshots/devpanel-environment-switch.jpg" alt="环境切换" width="200"/></td>
-    <td><img src="screenshots/devpanel-setting.jpg" alt="设置" width="200"/></td>
-    <td><img src="screenshots/console-module-log-detail.jpg" alt="日志详情" width="200"/></td>
+    <td><img src="https://raw.githubusercontent.com/royorange/flutter-dev-panel/main/screenshots/console-module.jpg" alt="控制台" width="200"/></td>
+    <td><img src="https://raw.githubusercontent.com/royorange/flutter-dev-panel/main/screenshots/devpanel-environment-switch.jpg" alt="环境切换" width="200"/></td>
+    <td><img src="https://raw.githubusercontent.com/royorange/flutter-dev-panel/main/screenshots/devpanel-setting.jpg" alt="设置" width="200"/></td>
+    <td><img src="https://raw.githubusercontent.com/royorange/flutter-dev-panel/main/screenshots/console-module-log-detail.jpg" alt="日志详情" width="200"/></td>
   </tr>
   <tr>
-    <td><img src="screenshots/network-module-overview.jpg" alt="network-module-overview" width="200"/></td>
-    <td><img src="screenshots/network-module.jpg" alt="网络监控" width="200"/></td>
-    <td><img src="screenshots/network-module-response.jpg" alt="响应详情" width="200"/></td>
-    <td><img src="screenshots/performance-module.jpg" alt="性能监控" width="200"/></td>
+    <td><img src="https://raw.githubusercontent.com/royorange/flutter-dev-panel/main/screenshots/network-module-overview.jpg" alt="network-module-overview" width="200"/></td>
+    <td><img src="https://raw.githubusercontent.com/royorange/flutter-dev-panel/main/screenshots/network-module.jpg" alt="网络监控" width="200"/></td>
+    <td><img src="https://raw.githubusercontent.com/royorange/flutter-dev-panel/main/screenshots/network-module-response.jpg" alt="响应详情" width="200"/></td>
+    <td><img src="https://raw.githubusercontent.com/royorange/flutter-dev-panel/main/screenshots/performance-module.jpg" alt="性能监控" width="200"/></td>
   </tr>
 </table>
 

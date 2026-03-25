@@ -11,16 +11,16 @@ A powerful, zero-intrusion debugging panel for Flutter applications with modular
 
 <table>
   <tr>
-    <td><img src="screenshots/console-module.jpg" alt="Console" width="200"/></td>
-    <td><img src="screenshots/console-module-log-detail.jpg" alt="Log Detail" width="200"/></td>
-    <td><img src="screenshots/devpanel-environment-switch.jpg" alt="Environment" width="200"/></td>
-    <td><img src="screenshots/devpanel-setting.jpg" alt="Settings" width="200"/></td>
+    <td><img src="https://raw.githubusercontent.com/royorange/flutter-dev-panel/main/screenshots/console-module.jpg" alt="Console" width="200"/></td>
+    <td><img src="https://raw.githubusercontent.com/royorange/flutter-dev-panel/main/screenshots/console-module-log-detail.jpg" alt="Log Detail" width="200"/></td>
+    <td><img src="https://raw.githubusercontent.com/royorange/flutter-dev-panel/main/screenshots/devpanel-environment-switch.jpg" alt="Environment" width="200"/></td>
+    <td><img src="https://raw.githubusercontent.com/royorange/flutter-dev-panel/main/screenshots/devpanel-setting.jpg" alt="Settings" width="200"/></td>
   </tr>
   <tr>
-    <td><img src="screenshots/network-module-overview.jpg" alt="network-module-overview" width="200"/></td>
-    <td><img src="screenshots/network-module.jpg" alt="Network" width="200"/></td>
-    <td><img src="screenshots/network-module-response.jpg" alt="Response" width="200"/></td>
-    <td><img src="screenshots/performance-module.jpg" alt="Performance" width="200"/></td>
+    <td><img src="https://raw.githubusercontent.com/royorange/flutter-dev-panel/main/screenshots/network-module-overview.jpg" alt="network-module-overview" width="200"/></td>
+    <td><img src="https://raw.githubusercontent.com/royorange/flutter-dev-panel/main/screenshots/network-module.jpg" alt="Network" width="200"/></td>
+    <td><img src="https://raw.githubusercontent.com/royorange/flutter-dev-panel/main/screenshots/network-module-response.jpg" alt="Response" width="200"/></td>
+    <td><img src="https://raw.githubusercontent.com/royorange/flutter-dev-panel/main/screenshots/performance-module.jpg" alt="Performance" width="200"/></td>
   </tr>
 </table>
 
