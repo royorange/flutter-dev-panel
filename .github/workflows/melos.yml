@@ -180,9 +180,9 @@ jobs:
       - name: Dry Run Info
         if: github.event.inputs.dry_run == 'true'
         run: |
-          echo "🔍 DRY RUN MODE - No actual changes will be made"
+          echo "DRY RUN MODE - No actual changes will be made"
           export PATH="$PATH:$HOME/.pub-cache/bin"
-          
+
           if [[ "${{ github.event.inputs.action }}" == *"version"* ]]; then
             echo "Would version packages based on:"
             echo "  - Version type: ${{ github.event.inputs.version_type }}"
@@ -191,11 +191,32 @@ jobs:
             echo "Current versions:"
             dart run melos list --long
           fi
-          
+
           if [[ "${{ github.event.inputs.action }}" == *"publish"* ]]; then
             echo ""
+            echo "Preparing packages for dry-run validation..."
+
+            # Remove pubspec_overrides.yaml (same as real publish)
+            find . -name "pubspec_overrides.yaml" -type f -delete
+
+            # Replace path dependencies with hosted versions for sub-packages
+            MAIN_VERSION=$(grep "^version:" pubspec.yaml | cut -d' ' -f2)
+            for pkg_dir in packages/*/; do
+              if [ -f "$pkg_dir/pubspec.yaml" ]; then
+                cp "$pkg_dir/pubspec.yaml" "$pkg_dir/pubspec.yaml.bak"
+                sed "s|flutter_dev_panel:.*|flutter_dev_panel: ^$MAIN_VERSION|g" "$pkg_dir/pubspec.yaml.bak" | grep -v "path:" > "$pkg_dir/pubspec.yaml"
+              fi
+            done
+
             echo "Would publish the following packages:"
             dart run melos publish --dry-run --yes
+
+            # Restore original pubspec.yaml files
+            for pkg_dir in packages/*/; do
+              if [ -f "$pkg_dir/pubspec.yaml.bak" ]; then
+                mv "$pkg_dir/pubspec.yaml.bak" "$pkg_dir/pubspec.yaml"
+              fi
+            done
           fi
       
       - name: Prepare for Publishing  
