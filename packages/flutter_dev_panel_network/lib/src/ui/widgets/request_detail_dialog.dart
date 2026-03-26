@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../models/network_request.dart';
 import 'expandable_item.dart';
 import 'json_viewer.dart';
+import 'sse_events_tab.dart';
 
 class RequestDetailDialog extends StatefulWidget {
   final NetworkRequest request;
@@ -20,10 +21,18 @@ class RequestDetailDialog extends StatefulWidget {
 class _RequestDetailDialogState extends State<RequestDetailDialog> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
+  bool get _isSSE => widget.request.isSSE || widget.request.status == RequestStatus.streaming;
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    final tabCount = _isSSE ? 5 : 4;
+    // SSE requests default to the EventStream tab (index 2)
+    _tabController = TabController(
+      length: tabCount,
+      vsync: this,
+      initialIndex: _isSSE ? 2 : 0,
+    );
   }
 
   @override
@@ -72,11 +81,12 @@ class _RequestDetailDialogState extends State<RequestDetailDialog> with SingleTi
                       fontSize: isSmallScreen ? 12 : 14,
                       fontWeight: FontWeight.w500,
                     ),
-                    tabs: const [
-                      Tab(text: 'Overview'),
-                      Tab(text: 'Request'),
-                      Tab(text: 'Response'),
-                      Tab(text: 'Headers'),
+                    tabs: [
+                      const Tab(text: 'Overview'),
+                      const Tab(text: 'Request'),
+                      if (_isSSE) const Tab(text: 'EventStream'),
+                      const Tab(text: 'Response'),
+                      const Tab(text: 'Headers'),
                     ],
                   ),
                 ),
@@ -86,6 +96,7 @@ class _RequestDetailDialogState extends State<RequestDetailDialog> with SingleTi
                     children: [
                       _buildOverviewTab(),
                       _buildRequestTab(),
+                      if (_isSSE) SSEEventsTab(request: widget.request),
                       _buildResponseTab(),
                       _buildHeadersTab(),
                     ],
@@ -224,6 +235,8 @@ class _RequestDetailDialogState extends State<RequestDetailDialog> with SingleTi
         _InfoItem('Request Size', _formatSize(_calculateSize(widget.request.requestBody))),
       if (widget.request.responseBody != null)
         _InfoItem('Response Size', _formatSize(_calculateSize(widget.request.responseBody))),
+      if (widget.request.isSSE)
+        _InfoItem('SSE Events', '${widget.request.sseEventCount}'),
       if (widget.request.error != null)
         _InfoItem('Error', widget.request.error!),
     ];
@@ -277,8 +290,8 @@ class _RequestDetailDialogState extends State<RequestDetailDialog> with SingleTi
             ),
             const SizedBox(height: 16),
             Text(
-              widget.request.status == RequestStatus.pending 
-                  ? 'Waiting for response...' 
+              (widget.request.status == RequestStatus.pending || widget.request.status == RequestStatus.streaming)
+                  ? 'Waiting for response...'
                   : 'No response body',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,

@@ -1,3 +1,14 @@
+## 1.2.0
+
+- **FEAT**: SSE (Server-Sent Events) stream monitoring support
+  - Auto-detect `text/event-stream` responses via Content-Type
+  - Real-time event capture for both `ResponseType.stream` and `ResponseType.plain`
+  - EventStream tab in request detail dialog (Chrome DevTools style)
+  - Purple SSE badge with event count in request list
+  - Zero-dependency SSE protocol parser with incremental parsing
+  - FIFO eviction (max 500 events per request), debounced UI updates (100ms)
+  - SSE events stored in memory only (not persisted to disk)
+
 ## 1.1.4
 
 - **PERF**: Cache request stats with incremental updates (O(1) vs O(n) per rebuild)

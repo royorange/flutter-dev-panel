@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_dev_panel/src/core/monitoring_data_provider.dart';
 import 'models/network_request.dart';
 import 'models/network_filter.dart';
+import 'models/sse_event.dart';
 import 'storage/network_storage.dart';
 
 class NetworkMonitorController extends ChangeNotifier {
@@ -28,6 +29,13 @@ class NetworkMonitorController extends ChangeNotifier {
   static const _saveDebounceDuration = Duration(milliseconds: 500);
   bool _hasPendingSave = false;
 
+  // SSE 防抖：合并短时间内的多次 SSE event 追加为一次 UI 更新
+  Timer? _sseDebounceTimer;
+  static const _sseDebounceDuration = Duration(milliseconds: 100);
+
+  /// Maximum SSE events kept per request (FIFO eviction).
+  static const maxSSEEventsPerRequest = 500;
+
   NetworkMonitorController({int maxRequests = 100}) : _maxRequests = maxRequests {
     _initialize();
   }
@@ -43,9 +51,9 @@ class NetworkMonitorController extends ChangeNotifier {
     // 加载历史请求记录
     final savedRequests = await NetworkStorage.loadRequests();
     if (savedRequests.isNotEmpty) {
-      // 过滤掉pending状态的请求（这些是异常中断的）
+      // 过滤掉pending/streaming状态的请求（这些是异常中断的）
       final completedRequests = savedRequests
-          .where((r) => r.status != RequestStatus.pending)
+          .where((r) => r.status != RequestStatus.pending && r.status != RequestStatus.streaming)
           .take(_maxRequests)
           .toList();
 
@@ -99,7 +107,7 @@ class NetworkMonitorController extends ChangeNotifier {
       switch (evicted.status) {
         case RequestStatus.success: _cachedSuccessCount--; break;
         case RequestStatus.error: case RequestStatus.cancelled: _cachedErrorCount--; break;
-        case RequestStatus.pending: _cachedPendingCount--; break;
+        case RequestStatus.pending: case RequestStatus.streaming: _cachedPendingCount--; break;
       }
     }
 
@@ -155,6 +163,7 @@ class NetworkMonitorController extends ChangeNotifier {
           error++;
           break;
         case RequestStatus.pending:
+        case RequestStatus.streaming:
           pending++;
           break;
       }
@@ -198,13 +207,13 @@ class NetworkMonitorController extends ChangeNotifier {
         switch (oldStatus) {
           case RequestStatus.success: _cachedSuccessCount--; break;
           case RequestStatus.error: case RequestStatus.cancelled: _cachedErrorCount--; break;
-          case RequestStatus.pending: _cachedPendingCount--; break;
+          case RequestStatus.pending: case RequestStatus.streaming: _cachedPendingCount--; break;
         }
         // 加上新状态
         switch (status) {
           case RequestStatus.success: _cachedSuccessCount++; break;
           case RequestStatus.error: case RequestStatus.cancelled: _cachedErrorCount++; break;
-          case RequestStatus.pending: _cachedPendingCount++; break;
+          case RequestStatus.pending: case RequestStatus.streaming: _cachedPendingCount++; break;
         }
       }
 
@@ -236,6 +245,76 @@ class NetworkMonitorController extends ChangeNotifier {
     }
   }
 
+  /// Append SSE events to a streaming request.
+  ///
+  /// Uses debounced [notifyListeners] (100ms) to batch rapid event arrivals.
+  /// Events beyond [maxSSEEventsPerRequest] are evicted FIFO.
+  /// SSE events are NOT persisted to storage.
+  void appendSSEEvents(String requestId, List<SSEEvent> events) {
+    if (_isPaused || events.isEmpty) return;
+
+    final index = _requests.indexWhere((r) => r.id == requestId);
+    if (index == -1) return;
+
+    final request = _requests[index];
+    final updatedEvents = List<SSEEvent>.from(request.sseEvents)..addAll(events);
+
+    // FIFO eviction
+    if (updatedEvents.length > maxSSEEventsPerRequest) {
+      updatedEvents.removeRange(0, updatedEvents.length - maxSSEEventsPerRequest);
+    }
+
+    _requests[index] = request.copyWith(
+      isSSE: true,
+      sseEvents: updatedEvents,
+      status: RequestStatus.streaming,
+    );
+
+    // Debounced UI update — no persistence for SSE events
+    _sseDebounceTimer?.cancel();
+    _sseDebounceTimer = Timer(_sseDebounceDuration, () {
+      notifyListeners();
+    });
+  }
+
+  /// Mark an SSE stream as completed.
+  void endSSEStream(String requestId, {int? statusCode, int? responseSize}) {
+    final index = _requests.indexWhere((r) => r.id == requestId);
+    if (index == -1) return;
+
+    final request = _requests[index];
+    final oldStatus = request.status;
+
+    _requests[index] = request.copyWith(
+      status: RequestStatus.success,
+      statusCode: statusCode,
+      endTime: DateTime.now(),
+      responseSize: responseSize,
+    );
+
+    // Update cached stats: streaming -> success
+    if (oldStatus == RequestStatus.streaming || oldStatus == RequestStatus.pending) {
+      _cachedPendingCount--;
+      _cachedSuccessCount++;
+    }
+
+    // Update session stats
+    if (_sessionPendingCount > 0) _sessionPendingCount--;
+    _sessionSuccessCount++;
+
+    // Persist the final state (without SSE events — handled by NetworkStorage)
+    _debounceSave();
+
+    MonitoringDataProvider.instance.onRequestComplete(false);
+    MonitoringDataProvider.instance.updateNetworkData(
+      totalRequests: _sessionRequestCount,
+      errorRequests: _sessionErrorCount,
+      pendingRequests: _sessionPendingCount,
+    );
+
+    notifyListeners();
+  }
+
   void clearRequests() {
     _requests.clear();
     // 重置缓存统计
@@ -258,7 +337,7 @@ class NetworkMonitorController extends ChangeNotifier {
       switch (_requests[index].status) {
         case RequestStatus.success: _cachedSuccessCount--; break;
         case RequestStatus.error: case RequestStatus.cancelled: _cachedErrorCount--; break;
-        case RequestStatus.pending: _cachedPendingCount--; break;
+        case RequestStatus.pending: case RequestStatus.streaming: _cachedPendingCount--; break;
       }
       _requests.removeAt(index);
       notifyListeners();
@@ -327,6 +406,7 @@ class NetworkMonitorController extends ChangeNotifier {
   @override
   void dispose() {
     _saveDebounceTimer?.cancel();
+    _sseDebounceTimer?.cancel();
     if (_hasPendingSave) {
       // 快照当前数据后再保存，避免 clear 后保存空列表
       final snapshot = List<NetworkRequest>.from(_requests);

@@ -1,10 +1,14 @@
 import 'dart:convert';
 
+import 'sse_event.dart';
+
 enum RequestStatus {
   pending,
   success,
   error,
   cancelled,
+  // Must be last — NetworkStorage serializes via enum.index
+  streaming,
 }
 
 enum RequestMethod {
@@ -34,6 +38,12 @@ class NetworkRequest {
   final int? responseSize;
   final int? requestSize;
 
+  /// Whether this request is a Server-Sent Events stream.
+  final bool isSSE;
+
+  /// SSE events received (in-memory only, not persisted to storage).
+  final List<SSEEvent> sseEvents;
+
   NetworkRequest({
     required this.id,
     required this.url,
@@ -50,6 +60,8 @@ class NetworkRequest {
     this.responseHeaders = const {},
     this.responseSize,
     this.requestSize,
+    this.isSSE = false,
+    this.sseEvents = const [],
   });
 
   Duration? get duration {
@@ -68,6 +80,13 @@ class NetworkRequest {
   bool get isError {
     return status == RequestStatus.error || (statusCode != null && statusCode! >= 400);
   }
+
+  /// Number of SSE events received so far.
+  int get sseEventCount => sseEvents.length;
+
+  /// Concatenated data from all SSE events.
+  String get accumulatedSSEData =>
+      sseEvents.map((e) => e.data).join();
 
   String get formattedRequestBody {
     if (requestBody == null) return '';
@@ -105,6 +124,8 @@ class NetworkRequest {
     Map<String, dynamic>? responseHeaders,
     int? responseSize,
     int? requestSize,
+    bool? isSSE,
+    List<SSEEvent>? sseEvents,
   }) {
     return NetworkRequest(
       id: id ?? this.id,
@@ -122,6 +143,8 @@ class NetworkRequest {
       responseHeaders: responseHeaders ?? this.responseHeaders,
       responseSize: responseSize ?? this.responseSize,
       requestSize: requestSize ?? this.requestSize,
+      isSSE: isSSE ?? this.isSSE,
+      sseEvents: sseEvents ?? this.sseEvents,
     );
   }
 }

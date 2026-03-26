@@ -95,6 +95,8 @@ class NetworkStorage {
       'responseHeaders': request.responseHeaders,
       'responseSize': request.responseSize,
       'requestSize': request.requestSize,
+      'isSSE': request.isSSE,
+      // sseEvents are NOT persisted (too large, memory-only)
     };
   }
   
@@ -111,14 +113,23 @@ class NetworkStorage {
       statusMessage: json['statusMessage'] as String?,
       startTime: DateTime.parse(json['startTime'] as String),
       endTime: json['endTime'] != null ? DateTime.parse(json['endTime'] as String) : null,
-      status: RequestStatus.values[json['status'] as int],
+      status: _parseStatus(json['status'] as int),
       error: json['error'] as String?,
       responseHeaders: Map<String, dynamic>.from(json['responseHeaders'] ?? {}),
       responseSize: json['responseSize'] as int?,
       requestSize: json['requestSize'] as int?,
+      isSSE: json['isSSE'] as bool? ?? false,
     );
   }
   
+  /// Parse status index with bounds protection for forward compatibility.
+  static RequestStatus _parseStatus(int index) {
+    if (index < 0 || index >= RequestStatus.values.length) {
+      return RequestStatus.success;
+    }
+    return RequestStatus.values[index];
+  }
+
   /// 编码请求/响应体
   static dynamic _encodeBody(dynamic body) {
     if (body == null) return null;

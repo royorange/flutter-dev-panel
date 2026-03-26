@@ -163,6 +163,42 @@ class RequestListItem extends StatelessWidget {
       );
     }
 
+    // SSE streaming or completed SSE
+    if (request.status == RequestStatus.streaming || request.isSSE) {
+      final isStreaming = request.status == RequestStatus.streaming;
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        decoration: BoxDecoration(
+          color: Colors.purple.shade100,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isStreaming) ...[
+              SizedBox(
+                width: 10,
+                height: 10,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation(Colors.purple.shade700),
+                ),
+              ),
+              const SizedBox(width: 4),
+            ],
+            Text(
+              'SSE${request.sseEventCount > 0 ? ' ${request.sseEventCount}' : ''}',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: Colors.purple.shade700,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     final statusCode = request.statusCode;
     if (statusCode == null) return const SizedBox.shrink();
 
