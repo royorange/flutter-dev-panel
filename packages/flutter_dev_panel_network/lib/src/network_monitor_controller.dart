@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dev_panel/src/core/monitoring_data_provider.dart';
+import 'package:flutter_dev_panel/flutter_dev_panel.dart' show MonitoringDataProvider;
 import 'models/network_request.dart';
 import 'models/network_filter.dart';
 import 'models/sse_event.dart';

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../network_monitor_controller.dart';
 import '../models/network_request.dart';
-import '../models/network_filter.dart';
 import 'widgets/request_list_item.dart';
 import 'widgets/request_detail_dialog.dart';
 

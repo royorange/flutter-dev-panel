@@ -6,7 +6,7 @@ import '../network_monitor_controller.dart';
 
 /// BaseNetworkInterceptor的HTTP实现
 class _HttpInterceptor extends BaseNetworkInterceptor {
-  _HttpInterceptor(NetworkMonitorController controller) : super(controller);
+  _HttpInterceptor(super.controller);
 }
 
 /// 用于http包的拦截器客户端

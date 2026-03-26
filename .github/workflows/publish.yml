@@ -30,27 +30,27 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.x'
           channel: 'stable'
-      
+
       - name: Setup Pub Credentials
         run: |
           mkdir -p $HOME/.config/dart
           echo '${{ secrets.PUB_CREDENTIALS }}' > $HOME/.config/dart/pub-credentials.json
-        
+
       - name: Determine package to publish
         id: determine_package
         run: |
           if [ "${{ github.event_name }}" == "push" ]; then
             # Extract package name from tag
             TAG="${{ github.ref_name }}"
-            
+
             # Map tags to full package names
             case $TAG in
               v*)
@@ -78,7 +78,7 @@ jobs:
             PACKAGE="${{ github.event.inputs.package }}"
           fi
           echo "package=$PACKAGE" >> $GITHUB_OUTPUT
-      
+
       - name: Publish main package
         if: steps.determine_package.outputs.package == 'flutter_dev_panel' || steps.determine_package.outputs.package == 'all'
         run: |
@@ -93,97 +93,153 @@ jobs:
           else
             flutter pub publish --force
           fi
-      
+
       - name: Publish flutter_dev_panel_console
         if: steps.determine_package.outputs.package == 'flutter_dev_panel_console' || steps.determine_package.outputs.package == 'all'
         run: |
           echo "Publishing flutter_dev_panel_console..."
           cd packages/flutter_dev_panel_console
-          
-          # Update dependency to published version
+
+          # Get main package version from pub.dev
           MAIN_VERSION=$(grep "^version:" ../../pubspec.yaml | cut -d' ' -f2)
           echo "Main package version: $MAIN_VERSION"
-          
-          # Create temp file and replace
-          cp pubspec.yaml pubspec.yaml.bak
-          cat pubspec.yaml.bak | sed "s|path: ../..|^$MAIN_VERSION|g" | grep -v "publish_to: none" > pubspec.yaml
-          
-          echo "Updated dependencies in pubspec.yaml"
-          
-          # Skip tests in CI
-          echo "Skipping tests in CI due to monorepo structure"
+
+          # Remove pubspec_overrides.yaml if exists
+          rm -f pubspec_overrides.yaml
+
+          # Replace multi-line path dependency with hosted version
+          awk -v ver="^$MAIN_VERSION" '
+          /flutter_dev_panel:$/ {
+              getline next_line
+              if (next_line ~ /path: \.\.\/\.\./) {
+                  print $0 " " ver
+              } else {
+                  print
+                  print next_line
+              }
+              next
+          }
+          { print }
+          ' pubspec.yaml > pubspec.yaml.tmp
+          mv pubspec.yaml.tmp pubspec.yaml
+
+          # Remove publish_to: none
+          sed -i '/publish_to: none/d' pubspec.yaml
+
+          echo "Updated pubspec.yaml:"
+          head -20 pubspec.yaml
+
           if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
             flutter pub publish --dry-run
           else
             flutter pub publish --force
           fi
-      
+
       - name: Publish flutter_dev_panel_network
         if: steps.determine_package.outputs.package == 'flutter_dev_panel_network' || steps.determine_package.outputs.package == 'all'
         run: |
           echo "Publishing flutter_dev_panel_network..."
           cd packages/flutter_dev_panel_network
-          
-          # Update dependency to published version
+
           MAIN_VERSION=$(grep "^version:" ../../pubspec.yaml | cut -d' ' -f2)
           echo "Main package version: $MAIN_VERSION"
-          
-          # Create temp file and replace
-          cp pubspec.yaml pubspec.yaml.bak
-          cat pubspec.yaml.bak | sed "s|path: ../..|^$MAIN_VERSION|g" | grep -v "publish_to: none" > pubspec.yaml
-          
-          echo "Updated dependencies in pubspec.yaml"
-          
-          # Skip tests in CI
-          echo "Skipping tests in CI due to monorepo structure"
+
+          rm -f pubspec_overrides.yaml
+
+          awk -v ver="^$MAIN_VERSION" '
+          /flutter_dev_panel:$/ {
+              getline next_line
+              if (next_line ~ /path: \.\.\/\.\./) {
+                  print $0 " " ver
+              } else {
+                  print
+                  print next_line
+              }
+              next
+          }
+          { print }
+          ' pubspec.yaml > pubspec.yaml.tmp
+          mv pubspec.yaml.tmp pubspec.yaml
+
+          sed -i '/publish_to: none/d' pubspec.yaml
+
+          echo "Updated pubspec.yaml:"
+          head -20 pubspec.yaml
+
           if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
             flutter pub publish --dry-run
           else
             flutter pub publish --force
           fi
-      
+
       - name: Publish flutter_dev_panel_device
         if: steps.determine_package.outputs.package == 'flutter_dev_panel_device' || steps.determine_package.outputs.package == 'all'
         run: |
           echo "Publishing flutter_dev_panel_device..."
           cd packages/flutter_dev_panel_device
-          
-          # Update dependency to published version
+
           MAIN_VERSION=$(grep "^version:" ../../pubspec.yaml | cut -d' ' -f2)
           echo "Main package version: $MAIN_VERSION"
-          
-          # Create temp file and replace
-          cp pubspec.yaml pubspec.yaml.bak
-          cat pubspec.yaml.bak | sed "s|path: ../..|^$MAIN_VERSION|g" | grep -v "publish_to: none" > pubspec.yaml
-          
-          echo "Updated dependencies in pubspec.yaml"
-          
-          # Skip tests in CI
-          echo "Skipping tests in CI due to monorepo structure"
+
+          rm -f pubspec_overrides.yaml
+
+          awk -v ver="^$MAIN_VERSION" '
+          /flutter_dev_panel:$/ {
+              getline next_line
+              if (next_line ~ /path: \.\.\/\.\./) {
+                  print $0 " " ver
+              } else {
+                  print
+                  print next_line
+              }
+              next
+          }
+          { print }
+          ' pubspec.yaml > pubspec.yaml.tmp
+          mv pubspec.yaml.tmp pubspec.yaml
+
+          sed -i '/publish_to: none/d' pubspec.yaml
+
+          echo "Updated pubspec.yaml:"
+          head -20 pubspec.yaml
+
           if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
             flutter pub publish --dry-run
           else
             flutter pub publish --force
           fi
-      
+
       - name: Publish flutter_dev_panel_performance
         if: steps.determine_package.outputs.package == 'flutter_dev_panel_performance' || steps.determine_package.outputs.package == 'all'
         run: |
           echo "Publishing flutter_dev_panel_performance..."
           cd packages/flutter_dev_panel_performance
-          
-          # Update dependency to published version
+
           MAIN_VERSION=$(grep "^version:" ../../pubspec.yaml | cut -d' ' -f2)
           echo "Main package version: $MAIN_VERSION"
-          
-          # Create temp file and replace
-          cp pubspec.yaml pubspec.yaml.bak
-          cat pubspec.yaml.bak | sed "s|path: ../..|^$MAIN_VERSION|g" | grep -v "publish_to: none" > pubspec.yaml
-          
-          echo "Updated dependencies in pubspec.yaml"
-          
-          # Skip tests in CI
-          echo "Skipping tests in CI due to monorepo structure"
+
+          rm -f pubspec_overrides.yaml
+
+          awk -v ver="^$MAIN_VERSION" '
+          /flutter_dev_panel:$/ {
+              getline next_line
+              if (next_line ~ /path: \.\.\/\.\./) {
+                  print $0 " " ver
+              } else {
+                  print
+                  print next_line
+              }
+              next
+          }
+          { print }
+          ' pubspec.yaml > pubspec.yaml.tmp
+          mv pubspec.yaml.tmp pubspec.yaml
+
+          sed -i '/publish_to: none/d' pubspec.yaml
+
+          echo "Updated pubspec.yaml:"
+          head -20 pubspec.yaml
+
           if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
             flutter pub publish --dry-run
           else

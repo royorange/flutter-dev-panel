@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:gql/ast.dart' show OperationDefinitionNode, OperationType;
 import 'package:gql/language.dart' show printNode;
-import '../models/network_request.dart';
 import '../network_monitor_controller.dart';
 import 'base_interceptor.dart';
 
@@ -10,7 +9,7 @@ import 'base_interceptor.dart';
 class GraphQLInterceptor extends Link {
   final NetworkMonitorController controller;
   final BaseNetworkInterceptor _interceptor;
-  String? _endpoint; // 存储endpoint
+  final String? _endpoint; // 存储endpoint
   
   GraphQLInterceptor({NetworkMonitorController? controller, String? endpoint}) 
     : controller = controller ?? NetworkMonitorController(),
@@ -166,8 +165,8 @@ class GraphQLInterceptor extends Link {
     
     // 从context中提取自定义头
     final httpConfig = request.context.entry<HttpLinkHeaders>();
-    if (httpConfig != null && httpConfig.headers != null) {
-      headers.addAll(httpConfig.headers!);
+    if (httpConfig != null) {
+      headers.addAll(httpConfig.headers);
     }
     
     return headers;
@@ -180,8 +179,9 @@ class GraphQLInterceptor extends Link {
     
     // 从context中提取响应头（如果有）
     final httpResponse = response.context.entry<HttpLinkResponseContext>();
-    if (httpResponse != null && httpResponse.headers != null) {
-      headers.addAll(httpResponse.headers!);
+    final responseHeaders = httpResponse?.headers;
+    if (responseHeaders != null) {
+      headers.addAll(responseHeaders);
     }
     
     return headers;
@@ -190,7 +190,7 @@ class GraphQLInterceptor extends Link {
 
 /// GraphQL拦截器实现
 class _GraphQLInterceptorImpl extends BaseNetworkInterceptor {
-  _GraphQLInterceptorImpl(NetworkMonitorController controller) : super(controller);
+  _GraphQLInterceptorImpl(super.controller);
   
   String getUrlPath(String url) {
     // 对于GraphQL，URL通常包含操作名称作为锚点

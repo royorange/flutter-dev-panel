@@ -527,5 +527,5 @@ class _NetworkFabContentState extends State<_NetworkFabContent> with SingleTicke
 
 /// BaseNetworkInterceptor的简单实现
 class _NetworkInterceptorImpl extends BaseNetworkInterceptor {
-  _NetworkInterceptorImpl(NetworkMonitorController controller) : super(controller);
+  _NetworkInterceptorImpl(super.controller);
 }

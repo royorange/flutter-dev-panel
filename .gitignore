@@ -44,6 +44,9 @@ test_cache/
 **/*.bak
 packages/*/pubspec.yaml.bak
 
+# Melos dependency overrides (local-only)
+**/pubspec_overrides.yaml
+
 # Build artifacts that might change
 **/build/unit_test_assets/NOTICES.Z
 

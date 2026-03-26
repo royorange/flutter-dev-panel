@@ -131,38 +131,65 @@ publish_package() {
 update_subpackage_dependencies() {
     local package_path=$1
     local main_version=$2
-    
+
     print_info "Updating dependencies for $package_path..."
-    
+
     # Backup original pubspec.yaml
     cp "$package_path/pubspec.yaml" "$package_path/pubspec.yaml.bak"
-    
-    # Update dependencies: from path to version
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        # macOS
-        sed -i '' "s|path: ../..|^$main_version|g" "$package_path/pubspec.yaml"
-    else
-        # Linux
-        sed -i "s|path: ../..|^$main_version|g" "$package_path/pubspec.yaml"
+
+    # Temporarily remove pubspec_overrides.yaml (Melos generates this with path overrides)
+    if [[ -f "$package_path/pubspec_overrides.yaml" ]]; then
+        mv "$package_path/pubspec_overrides.yaml" "$package_path/pubspec_overrides.yaml.bak"
+        print_info "Temporarily removed pubspec_overrides.yaml"
     fi
-    
+
+    # Update dependencies: replace multi-line path dependency with inline hosted version
+    # Converts:
+    #   flutter_dev_panel:
+    #     path: ../..
+    # To:
+    #   flutter_dev_panel: ^VERSION
+    local tmp_file="$package_path/pubspec.yaml.tmp"
+    awk -v ver="^$main_version" '
+    /flutter_dev_panel:$/ {
+        # Read next line
+        getline next_line
+        if (next_line ~ /path: \.\.\/\.\./) {
+            # Replace with inline version
+            print $0 " " ver
+        } else {
+            print
+            print next_line
+        }
+        next
+    }
+    { print }
+    ' "$package_path/pubspec.yaml" > "$tmp_file"
+    mv "$tmp_file" "$package_path/pubspec.yaml"
+
     # Remove publish_to: none
     if [[ "$OSTYPE" == "darwin"* ]]; then
         sed -i '' '/publish_to: none/d' "$package_path/pubspec.yaml"
     else
         sed -i '/publish_to: none/d' "$package_path/pubspec.yaml"
     fi
-    
+
     print_success "Dependencies updated"
 }
 
 # Function to restore sub-package dependencies
 restore_subpackage_dependencies() {
     local package_path=$1
-    
+
     if [[ -f "$package_path/pubspec.yaml.bak" ]]; then
         mv "$package_path/pubspec.yaml.bak" "$package_path/pubspec.yaml"
-        print_info "Restored original dependencies for $package_path"
+        print_info "Restored original pubspec.yaml for $package_path"
+    fi
+
+    # Restore pubspec_overrides.yaml
+    if [[ -f "$package_path/pubspec_overrides.yaml.bak" ]]; then
+        mv "$package_path/pubspec_overrides.yaml.bak" "$package_path/pubspec_overrides.yaml"
+        print_info "Restored pubspec_overrides.yaml for $package_path"
     fi
 }
 
