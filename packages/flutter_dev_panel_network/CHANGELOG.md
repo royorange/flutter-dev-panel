@@ -1,3 +1,10 @@
+## 1.2.1
+
+- **FIX**: Requests stuck in pending/loading state after completion or failure
+  - Added try-catch protection in Dio interceptor `onResponse` and `onError`
+  - Added `recorded` flag with `finally` safety net in GraphQL interceptor
+  - Ensures requests are never left in pending state regardless of exceptions
+
 ## 1.2.0
 
 - **FEAT**: SSE (Server-Sent Events) stream monitoring support

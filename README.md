@@ -158,7 +158,8 @@ flutter build apk --release
 flutter build apk --release --dart-define=FORCE_DEV_PANEL=true
 ```
 
-- **Debug Mode**: Automatically enabled
+- **Debug Mode**: Automatically enabled (full UI + environment loading)
+- **Profile Mode**: Environment loading works, debug UI disabled
 - **Release Mode**: Completely removed by tree-shaking
 - **Force Enable**: Optional for internal testing builds
 

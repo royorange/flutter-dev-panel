@@ -85,59 +85,75 @@ class GraphQLInterceptor extends Link {
       requestSize: requestSize,
     );
     
+    bool recorded = false;
     try {
-      // 转发请求并监控响应
       await for (final response in forward(request)) {
-        // 记录响应
-        final responseData = response.data;
-        final errors = response.errors;
-        
-        // 构建响应体
-        Map<String, dynamic> responseBody = {};
-        if (responseData != null) {
-          responseBody['data'] = responseData;
+        try {
+          final responseData = response.data;
+          final errors = response.errors;
+
+          Map<String, dynamic> responseBody = {};
+          if (responseData != null) {
+            responseBody['data'] = responseData;
+          }
+          if (errors != null && errors.isNotEmpty) {
+            responseBody['errors'] = errors.map((e) => {
+              'message': e.message,
+              'path': e.path,
+              'extensions': e.extensions,
+            }).toList();
+          }
+
+          final responseSize = utf8.encode(json.encode(responseBody)).length;
+
+          _interceptor.recordResponse(
+            requestId: requestId,
+            statusCode: errors?.isNotEmpty == true ? 400 : 200,
+            statusMessage: errors?.isNotEmpty == true ? 'GraphQL Error' : 'OK',
+            headers: _extractResponseHeaders(response),
+            body: responseBody,
+            responseSize: responseSize,
+          );
+          recorded = true;
+        } catch (_) {
+          // Ensure request never stays stuck in pending
+          if (!recorded) {
+            _interceptor.recordResponse(
+              requestId: requestId,
+              statusCode: 200,
+              statusMessage: 'OK',
+            );
+            recorded = true;
+          }
         }
-        if (errors != null && errors.isNotEmpty) {
-          responseBody['errors'] = errors.map((e) => {
-            'message': e.message,
-            'path': e.path,
-            'extensions': e.extensions,
-          }).toList();
-        }
-        
-        // 计算响应大小
-        final responseSize = utf8.encode(json.encode(responseBody)).length;
-        
-        // 记录响应
-        _interceptor.recordResponse(
-          requestId: requestId,
-          statusCode: errors?.isNotEmpty == true ? 400 : 200,
-          statusMessage: errors?.isNotEmpty == true ? 'GraphQL Error' : 'OK',
-          headers: _extractResponseHeaders(response),
-          body: responseBody,
-          responseSize: responseSize,
-        );
-        
+
         yield response;
       }
     } catch (error) {
-      // 记录错误，处理可能的 LinkException
-      String errorMessage = error.toString();
-      
-      // 特殊处理 LinkException，它可能包含不可序列化的内容
-      if (error.runtimeType.toString().contains('Exception')) {
+      if (!recorded) {
+        String errorMessage;
         try {
           errorMessage = error.toString();
         } catch (_) {
           errorMessage = 'GraphQL Link Error';
         }
+
+        _interceptor.recordError(
+          requestId: requestId,
+          error: errorMessage,
+        );
+        recorded = true;
       }
-      
-      _interceptor.recordError(
-        requestId: requestId,
-        error: errorMessage,
-      );
       rethrow;
+    } finally {
+      // Safety net: if stream ended without emitting any response or error,
+      // mark as error so the request never stays pending forever.
+      if (!recorded) {
+        _interceptor.recordError(
+          requestId: requestId,
+          error: 'Request ended without response',
+        );
+      }
     }
   }
   

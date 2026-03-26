@@ -149,25 +149,30 @@ class EnvLoader {
   }
   
   /// 从文件名提取环境名
+  ///
+  /// Capitalizes only the first letter, preserves the rest as-is:
+  /// .env.dev → Dev, .env.production → Production, .env.iOS → IOS
   static String _extractEnvNameFromFile(String fileName) {
-    // .env.dev → Dev
-    // .env.development → Development
-    // .env.staging → Staging
     if (!fileName.startsWith('.env.')) {
       return 'Default';
     }
-    
+
     final suffix = fileName.substring(5); // Remove '.env.'
-    
-    // 首字母大写
+
     if (suffix.isEmpty) {
       return 'Default';
     }
-    return suffix[0].toUpperCase() + suffix.substring(1).toLowerCase();
+    return suffix[0].toUpperCase() + suffix.substring(1);
   }
   
   
   /// 静默尝试加载 .env 文件（不打印错误）
+  ///
+  /// Note: dotenv.load() overwrites the global dotenv.env map on each call.
+  /// We immediately copy the result via Map.from(dotenv.env), so our data is
+  /// safe. However, if user code also reads dotenv.env directly, it will
+  /// reflect the last loaded file. Users who rely on dotenv.env globally
+  /// should load their own .env file after DevPanel initialization.
   static Future<Map<String, dynamic>?> _tryLoadEnvFile(String fileName) async {
     try {
       await dotenv.load(fileName: fileName);

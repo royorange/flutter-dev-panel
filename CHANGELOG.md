@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.1.6
+
+- **FIX**: Environment variables now load in profile mode (and all build modes)
+  - Separated environment loading from debug UI initialization
+  - `DevPanel.init()` loads `.env` files before the `kDebugMode` gate
+  - Added `EnvironmentManager.isInitialized` guard to prevent duplicate init
+- **FIX**: Preserve original casing in `.env` file name extraction (e.g. `.env.dev` -> `Dev` not `dev`)
+- **FIX**: Add diagnostic logging for environment fallback failures
+
 ## 1.1.5
 
 - **PERF**: Add cached error/warning counts to DevLogger for O(1) FAB updates

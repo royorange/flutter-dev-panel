@@ -56,6 +56,10 @@ class EnvironmentManager extends ChangeNotifier {
     _loadEnvironments();
   }
 
+  // Whether initialize() has been called
+  bool _isInitialized = false;
+  bool get isInitialized => _isInitialized;
+
   // Current environment
   EnvironmentConfig? _currentEnvironment;
   EnvironmentConfig? get currentEnvironment => _currentEnvironment;
@@ -75,6 +79,10 @@ class EnvironmentManager extends ChangeNotifier {
     String? defaultEnvironment,
     bool loadFromEnvFiles = true,
   }) async {
+    // Prevent duplicate initialization
+    if (_isInitialized) return;
+    _isInitialized = true;
+
     // 1. Load from .env files first
     List<EnvironmentConfig>? envFileConfigs;
     if (loadFromEnvFiles) {
@@ -479,6 +487,7 @@ class EnvironmentManager extends ChangeNotifier {
   void clear() {
     _environments.clear();
     _currentEnvironment = null;
+    _isInitialized = false;
     _saveEnvironments();
     notifyListeners();
   }

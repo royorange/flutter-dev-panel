@@ -38,28 +38,32 @@ class NetworkInterceptor extends Interceptor {
     final requestId = response.requestOptions.extra['requestId'] as String?;
 
     if (requestId != null) {
-      final isSSE = _isSSEResponse(response);
+      try {
+        final isSSE = _isSSEResponse(response);
 
-      if (isSSE && response.requestOptions.responseType == ResponseType.stream) {
-        // Scenario A: ResponseType.stream — data is a ResponseBody.
-        // Wrap the stream transparently to capture SSE events without
-        // interfering with the user's consumption of the stream.
-        _handleStreamSSE(requestId, response);
-      } else if (isSSE && response.data is String) {
-        // Scenario B: ResponseType.plain — Dio already read the full body.
-        // Parse all SSE events at once.
-        _handlePlainSSE(requestId, response);
-      } else {
-        // Regular (non-SSE) response
+        if (isSSE && response.requestOptions.responseType == ResponseType.stream) {
+          _handleStreamSSE(requestId, response);
+        } else if (isSSE && response.data is String) {
+          _handlePlainSSE(requestId, response);
+        } else {
+          controller.updateRequest(
+            requestId,
+            responseBody: response.data,
+            statusCode: response.statusCode,
+            statusMessage: response.statusMessage,
+            endTime: DateTime.now(),
+            status: RequestStatus.success,
+            responseHeaders: response.headers.map.map((k, v) => MapEntry(k, v.join(', '))),
+            responseSize: _calculateSize(response.data),
+          );
+        }
+      } catch (e) {
+        // Ensure request never stays stuck in pending
         controller.updateRequest(
           requestId,
-          responseBody: response.data,
           statusCode: response.statusCode,
-          statusMessage: response.statusMessage,
           endTime: DateTime.now(),
           status: RequestStatus.success,
-          responseHeaders: response.headers.map.map((k, v) => MapEntry(k, v.join(', '))),
-          responseSize: _calculateSize(response.data),
         );
       }
     }
@@ -70,21 +74,32 @@ class NetworkInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
     final requestId = err.requestOptions.extra['requestId'] as String?;
-    
+
     if (requestId != null) {
-      controller.updateRequest(
-        requestId,
-        responseBody: err.response?.data,
-        statusCode: err.response?.statusCode,
-        statusMessage: err.response?.statusMessage ?? err.message,
-        endTime: DateTime.now(),
-        status: RequestStatus.error,
-        error: err.toString(),
-        responseHeaders: err.response?.headers.map.map((k, v) => MapEntry(k, v.join(', '))) ?? {},
-        responseSize: _calculateSize(err.response?.data),
-      );
+      try {
+        controller.updateRequest(
+          requestId,
+          responseBody: err.response?.data,
+          statusCode: err.response?.statusCode,
+          statusMessage: err.response?.statusMessage ?? err.message,
+          endTime: DateTime.now(),
+          status: RequestStatus.error,
+          error: err.toString(),
+          responseHeaders: err.response?.headers.map.map((k, v) => MapEntry(k, v.join(', '))) ?? {},
+          responseSize: _calculateSize(err.response?.data),
+        );
+      } catch (e) {
+        // Ensure request never stays stuck in pending
+        controller.updateRequest(
+          requestId,
+          statusCode: err.response?.statusCode,
+          endTime: DateTime.now(),
+          status: RequestStatus.error,
+          error: err.toString(),
+        );
+      }
     }
-    
+
     super.onError(err, handler);
   }
 

@@ -256,16 +256,24 @@ class DevPanel {
     void Function(Object error, StackTrace stack)? onError,
     List<EnvironmentConfig>? environments, // 可选的代码配置环境
   }) async {
-    // 使用编译时常量以支持 tree shaking
+    // Environment loading runs in ALL build modes (debug, profile, release).
+    // It has zero runtime cost when no environments are configured.
+    WidgetsFlutterBinding.ensureInitialized();
+    await _initializeEnvironment(
+      config: config,
+      environments: environments,
+    );
+
+    // Debug UI is gated behind kDebugMode / FORCE_DEV_PANEL
     if (!(kDebugMode || _forceDevPanel)) {
-      // 在 Release 模式下（且未强制启用），直接运行应用
       await appRunner();
       return;
     }
 
     // 创建一个包装函数，在 Zone 内初始化所有内容
     Future<void> runInZone() async {
-      // 在 Zone 内调用 ensureInitialized，避免 Zone mismatch
+      // Re-call ensureInitialized inside Zone to attach the binding to
+      // this Zone's error handler. Safe to call multiple times.
       WidgetsFlutterBinding.ensureInitialized();
 
       // 初始化 Dev Panel（必须在 binding 初始化之后）
@@ -276,41 +284,6 @@ class DevPanel {
           modules: modules,
           enableLogCapture: config.enableLogCapture,
         );
-      }
-
-      // 初始化环境（已经在 Zone 内）
-      if (EnvironmentManager.instance.environments.isEmpty &&
-          (config.loadFromEnvFiles || environments != null)) {
-        try {
-          await EnvironmentManager.instance.initialize(
-            loadFromEnvFiles: config.loadFromEnvFiles,
-            environments: environments,
-          );
-        } catch (e) {
-          if (kDebugMode) {
-            debugPrint('DevPanel: Environment init failed: $e');
-            // 备用环境处理...
-            if (environments != null && environments.isNotEmpty) {
-              for (final env in environments) {
-                try {
-                  EnvironmentManager.instance.addEnvironment(env);
-                } catch (_) {}
-              }
-              try {
-                if (environments.any((e) => e.isDefault)) {
-                  final defaultEnv =
-                      environments.firstWhere((e) => e.isDefault);
-                  EnvironmentManager.instance
-                      .switchEnvironment(defaultEnv.name);
-                } else if (EnvironmentManager
-                    .instance.environments.isNotEmpty) {
-                  EnvironmentManager.instance.switchEnvironment(
-                      EnvironmentManager.instance.environments.first.name);
-                }
-              } catch (_) {}
-            }
-          }
-        }
       }
 
       // 执行用户的 appRunner
@@ -355,6 +328,49 @@ class DevPanel {
           #_devPanelPrintIntercepted: true,
         },
       );
+    }
+  }
+
+  /// Initialize environment from .env files and code configuration.
+  /// Runs in ALL build modes (debug, profile, release).
+  /// Guarded by EnvironmentManager.isInitialized to prevent duplicate calls.
+  static Future<void> _initializeEnvironment({
+    required DevPanelConfig config,
+    List<EnvironmentConfig>? environments,
+  }) async {
+    if (config.loadFromEnvFiles || environments != null) {
+      try {
+        await EnvironmentManager.instance.initialize(
+          loadFromEnvFiles: config.loadFromEnvFiles,
+          environments: environments,
+        );
+      } catch (e) {
+        debugPrint('DevPanel: Environment init failed: $e');
+        // Fallback: add environments directly
+        if (environments != null && environments.isNotEmpty) {
+          for (final env in environments) {
+            try {
+              EnvironmentManager.instance.addEnvironment(env);
+            } catch (addErr) {
+              debugPrint('DevPanel: Fallback addEnvironment failed: $addErr');
+            }
+          }
+          try {
+            if (environments.any((e) => e.isDefault)) {
+              final defaultEnv =
+                  environments.firstWhere((e) => e.isDefault);
+              EnvironmentManager.instance
+                  .switchEnvironment(defaultEnv.name);
+            } else if (EnvironmentManager
+                .instance.environments.isNotEmpty) {
+              EnvironmentManager.instance.switchEnvironment(
+                  EnvironmentManager.instance.environments.first.name);
+            }
+          } catch (switchErr) {
+            debugPrint('DevPanel: Fallback switchEnvironment failed: $switchErr');
+          }
+        }
+      }
     }
   }
 
