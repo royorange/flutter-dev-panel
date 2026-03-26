@@ -272,22 +272,38 @@ jobs:
               return
             fi
 
+            # Copy package to a standalone temp directory with its own git repo.
+            # dart pub publish uses 'git ls-files' to determine which files to
+            # include in the archive. When running from a monorepo subdirectory,
+            # the git root differs from the package root, causing an empty archive
+            # (<1 KB) and "pubspec is hidden" errors. Publishing from an isolated
+            # git repo ensures all package files are correctly included.
+            local tmp_dir=$(mktemp -d)
+            echo "Copying $name to temp directory: $tmp_dir"
+            cp -r "$dir"/. "$tmp_dir/"
+
             # Replace path dependency with hosted version
-            cp "$dir/pubspec.yaml" "$dir/pubspec.yaml.bak"
-            sed "s|flutter_dev_panel:.*|flutter_dev_panel: ^$MAIN_PUB|g" "$dir/pubspec.yaml.bak" | grep -v "    path:" > "$dir/pubspec.yaml"
+            sed "s|flutter_dev_panel:.*|flutter_dev_panel: ^$MAIN_PUB|g" "$tmp_dir/pubspec.yaml" | grep -v "    path:" > "$tmp_dir/pubspec.yaml.tmp"
+            mv "$tmp_dir/pubspec.yaml.tmp" "$tmp_dir/pubspec.yaml"
+
+            # Remove pubspec_overrides.yaml if present
+            rm -f "$tmp_dir/pubspec_overrides.yaml"
+
+            # Copy LICENSE from repo root
+            cp "$REPO_ROOT/LICENSE" "$tmp_dir/LICENSE" 2>/dev/null || true
 
             echo "Updated pubspec.yaml:"
-            grep -A1 "flutter_dev_panel" "$dir/pubspec.yaml" || true
+            grep -A1 "flutter_dev_panel" "$tmp_dir/pubspec.yaml" || true
 
-            # Also remove pubspec_overrides.yaml if present
-            rm -f "$dir/pubspec_overrides.yaml"
+            # Initialize as standalone git repo so dart pub publish works
+            (cd "$tmp_dir" && git init && git add -A && git commit -m "publish $name $version" --quiet)
 
             echo "Publishing $name $version..."
-            (cd "$dir" && dart pub publish --force)
+            (cd "$tmp_dir" && dart pub publish --force)
             local exit_code=$?
 
-            # Restore original
-            mv "$dir/pubspec.yaml.bak" "$dir/pubspec.yaml"
+            # Cleanup temp directory
+            rm -rf "$tmp_dir"
 
             if [ $exit_code -ne 0 ]; then
               echo "FAILED to publish $name"
