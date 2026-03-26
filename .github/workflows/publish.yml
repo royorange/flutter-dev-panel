@@ -146,7 +146,7 @@ jobs:
             echo "Updated pubspec.yaml:"
             head -20 "$tmp_dir/pubspec.yaml"
 
-            (cd "$tmp_dir" && git init && git add -A && git commit -m "publish" --quiet)
+            (cd "$tmp_dir" && git init --quiet && git config user.name "ci" && git config user.email "ci@ci" && git add -A && git commit -m "publish" --quiet)
 
             if [ "$DRY_RUN" == "true" ]; then
               (cd "$tmp_dir" && flutter pub publish --dry-run)

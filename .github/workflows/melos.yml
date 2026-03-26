@@ -296,7 +296,7 @@ jobs:
             grep -A1 "flutter_dev_panel" "$tmp_dir/pubspec.yaml" || true
 
             # Initialize as standalone git repo so dart pub publish works
-            (cd "$tmp_dir" && git init && git add -A && git commit -m "publish $name $version" --quiet)
+            (cd "$tmp_dir" && git init --quiet && git config user.name "ci" && git config user.email "ci@ci" && git add -A && git commit -m "publish" --quiet)
 
             echo "Publishing $name $version..."
             (cd "$tmp_dir" && dart pub publish --force)
