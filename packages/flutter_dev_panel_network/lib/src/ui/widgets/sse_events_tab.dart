@@ -185,6 +185,15 @@ class _SSEEventCardState extends State<_SSEEventCard> {
 
     return InkWell(
       onTap: _isCollapsible ? () => setState(() => _expanded = !_expanded) : null,
+      onLongPress: () {
+        Clipboard.setData(ClipboardData(text: widget.event.toString()));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Event #${widget.event.index} copied'),
+            duration: const Duration(seconds: 1),
+          ),
+        );
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
