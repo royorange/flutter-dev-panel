@@ -1,3 +1,16 @@
+## 1.2.2
+
+- **FIX**: Pending requests stuck in FAB after page refresh or client recreation
+  - Added watchdog timer that sweeps stale pending/streaming requests every 10s
+  - Requests pending for over 60s are automatically marked as timed out (cancelled)
+  - Prevents orphaned requests from GraphQL client recreation or cancelled streams
+- **FIX**: Session stats double-counting when watchdog-cancelled requests receive late responses
+- **FIX**: ScrollController memory leak in request detail code viewer
+- **FIX**: JSON/response body overflow for large GraphQL payloads
+  - Unified horizontal+vertical scroll for all code viewers
+  - Fixed `Expanded` layout issue in JSON viewer long string display
+- **UX**: Long-press on individual SSE event card to copy that event to clipboard
+
 ## 1.2.1
 
 - **FIX**: Requests stuck in pending/loading state after completion or failure

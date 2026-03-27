@@ -152,8 +152,9 @@ class _JsonViewerState extends State<JsonViewer> {
       },
       child: Row(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
+          Flexible(
             child: textWidget,
           ),
           const SizedBox(width: 4),

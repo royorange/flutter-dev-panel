@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../models/network_request.dart';
@@ -20,6 +19,7 @@ class RequestDetailDialog extends StatefulWidget {
 
 class _RequestDetailDialogState extends State<RequestDetailDialog> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final ScrollController _codeViewerHScrollController = ScrollController();
 
   bool get _isSSE => widget.request.isSSE || widget.request.status == RequestStatus.streaming;
 
@@ -38,6 +38,7 @@ class _RequestDetailDialogState extends State<RequestDetailDialog> with SingleTi
   @override
   void dispose() {
     _tabController.dispose();
+    _codeViewerHScrollController.dispose();
     super.dispose();
   }
 
@@ -407,113 +408,36 @@ class _RequestDetailDialogState extends State<RequestDetailDialog> with SingleTi
     );
   }
 
-  /// 判断 JSON 是否复杂（需要横向滚动）
-  bool _isComplexJson(dynamic data, {int depth = 0}) {
-    if (depth > 2) return true; // 深度超过2层认为是复杂的
-    
-    if (data is Map) {
-      if (data.length > 10) return true; // 字段太多
-      for (final value in data.values) {
-        if (value is Map || value is List) {
-          if (_isComplexJson(value, depth: depth + 1)) return true;
-        }
-      }
-    } else if (data is List) {
-      if (data.length > 5) return true; // 数组太长
-      for (final item in data) {
-        if (item is Map || item is List) {
-          if (_isComplexJson(item, depth: depth + 1)) return true;
-        }
-      }
-    }
-    
-    return false;
-  }
-  
   Widget _buildCodeViewer(String code) {
     final theme = Theme.of(context);
-    
-    // 尝试解析 JSON 来判断复杂度
-    bool isComplexJson = false;
-    try {
-      final jsonData = json.decode(code);
-      isComplexJson = _isComplexJson(jsonData);
-    } catch (_) {
-      // 不是 JSON 或解析失败
-    }
-    
-    // 对于简单的 JSON，不需要横向滚动
-    if (!isComplexJson) {
-      return Container(
-        color: theme.colorScheme.surfaceContainerHighest,
-        child: Stack(
-          children: [
-            SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: JsonViewer(
-                jsonString: code,
-                style: TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 12,
-                  color: theme.colorScheme.onSurface,
-                ),
-              ),
-            ),
-            Positioned(
-              top: 8,
-              right: 8,
-              child: IconButton(
-                icon: const Icon(Icons.copy, size: 20),
-                onPressed: () {
-                  Clipboard.setData(ClipboardData(text: code));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Copied to clipboard'),
-                      duration: Duration(seconds: 1),
-                    ),
-                  );
-                },
-                style: IconButton.styleFrom(
-                  backgroundColor: theme.colorScheme.surface,
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-    
-    // 对于复杂的 JSON，提供横向滚动
-    final scrollController = ScrollController();
-    
+
     return Container(
       color: theme.colorScheme.surfaceContainerHighest,
       child: Stack(
         children: [
           NotificationListener<ScrollNotification>(
             onNotification: (scrollNotification) {
-              // 拦截所有滚动事件，阻止传递到 TabBarView
-              // 这样可以防止横向滚动触发 Tab 切换
-              if (scrollNotification is ScrollUpdateNotification) {
-                return true; // 阻止冒泡
+              // Intercept horizontal scroll events to prevent triggering tab switch
+              if (scrollNotification is ScrollUpdateNotification ||
+                  scrollNotification is OverscrollNotification) {
+                return true;
               }
               return false;
             },
             child: ClipRect(
               child: Scrollbar(
-                controller: scrollController,
+                controller: _codeViewerHScrollController,
                 thumbVisibility: true,
                 trackVisibility: false,
                 child: SingleChildScrollView(
-                  controller: scrollController,
+                  controller: _codeViewerHScrollController,
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(16).copyWith(bottom: 24), // 底部留空间给滚动条
+                    padding: const EdgeInsets.all(16).copyWith(bottom: 24),
                     child: Container(
                       constraints: BoxConstraints(
-                        minWidth: MediaQuery.of(context).size.width - 48, // 至少占满屏幕宽度
-                        maxWidth: 2000, // 增加最大宽度以适应深层嵌套
+                        minWidth: MediaQuery.of(context).size.width - 48,
                       ),
                       child: JsonViewer(
                         jsonString: code,

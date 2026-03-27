@@ -33,6 +33,12 @@ class NetworkMonitorController extends ChangeNotifier {
   Timer? _sseDebounceTimer;
   static const _sseDebounceDuration = Duration(milliseconds: 100);
 
+  // Pending request watchdog: periodically marks stale pending requests
+  // as timed out so they never stay stuck in the FAB forever.
+  Timer? _pendingWatchdogTimer;
+  static const _watchdogInterval = Duration(seconds: 10);
+  static const _pendingTimeout = Duration(seconds: 60);
+
   /// Maximum SSE events kept per request (FIFO eviction).
   static const maxSSEEventsPerRequest = 500;
 
@@ -65,6 +71,8 @@ class NetworkMonitorController extends ChangeNotifier {
     }
 
     // 初始化时不更新MonitoringDataProvider，因为这些都是历史数据
+
+    _startWatchdog();
   }
 
   List<NetworkRequest> get requests => _filteredRequests;
@@ -173,6 +181,59 @@ class NetworkMonitorController extends ChangeNotifier {
     _cachedPendingCount = pending;
   }
 
+  /// Start a periodic timer that sweeps stale pending/streaming requests.
+  void _startWatchdog() {
+    _pendingWatchdogTimer?.cancel();
+    _pendingWatchdogTimer = Timer.periodic(_watchdogInterval, (_) {
+      _sweepStalePendingRequests();
+    });
+  }
+
+  /// Mark pending/streaming requests older than [_pendingTimeout] as timed out.
+  void _sweepStalePendingRequests() {
+    final now = DateTime.now();
+    bool changed = false;
+
+    for (int i = 0; i < _requests.length; i++) {
+      final request = _requests[i];
+      if (request.status != RequestStatus.pending &&
+          request.status != RequestStatus.streaming) {
+        continue;
+      }
+      if (now.difference(request.startTime) < _pendingTimeout) {
+        continue;
+      }
+
+      _requests[i] = request.copyWith(
+        status: RequestStatus.cancelled,
+        endTime: now,
+        error: 'Timed out (no response after ${_pendingTimeout.inSeconds}s)',
+      );
+
+      // Update cached stats: pending -> error
+      _cachedPendingCount--;
+      _cachedErrorCount++;
+
+      // Update session stats
+      if (_sessionPendingCount > 0) _sessionPendingCount--;
+      _sessionErrorCount++;
+
+      changed = true;
+    }
+
+    if (changed) {
+      _debounceSave();
+
+      MonitoringDataProvider.instance.updateNetworkData(
+        totalRequests: _sessionRequestCount,
+        errorRequests: _sessionErrorCount,
+        pendingRequests: _sessionPendingCount,
+      );
+
+      notifyListeners();
+    }
+  }
+
   void updateRequest(
     String id, {
     dynamic responseBody,
@@ -217,13 +278,24 @@ class NetworkMonitorController extends ChangeNotifier {
         }
       }
 
-      // 更新会话统计
-      if (status == RequestStatus.success) {
-        if (_sessionPendingCount > 0) _sessionPendingCount--;
-        _sessionSuccessCount++;
-      } else if (status == RequestStatus.error || status == RequestStatus.cancelled) {
-        if (_sessionPendingCount > 0) _sessionPendingCount--;
-        _sessionErrorCount++;
+      // 更新会话统计（与 cached stats 对称，先减旧状态再加新状态）
+      if (status != null && status != oldStatus) {
+        switch (oldStatus) {
+          case RequestStatus.success:
+            if (_sessionSuccessCount > 0) _sessionSuccessCount--;
+            break;
+          case RequestStatus.error: case RequestStatus.cancelled:
+            if (_sessionErrorCount > 0) _sessionErrorCount--;
+            break;
+          case RequestStatus.pending: case RequestStatus.streaming:
+            if (_sessionPendingCount > 0) _sessionPendingCount--;
+            break;
+        }
+        switch (status) {
+          case RequestStatus.success: _sessionSuccessCount++; break;
+          case RequestStatus.error: case RequestStatus.cancelled: _sessionErrorCount++; break;
+          case RequestStatus.pending: case RequestStatus.streaming: _sessionPendingCount++; break;
+        }
       }
 
       // 防抖保存到本地存储
@@ -407,6 +479,7 @@ class NetworkMonitorController extends ChangeNotifier {
   void dispose() {
     _saveDebounceTimer?.cancel();
     _sseDebounceTimer?.cancel();
+    _pendingWatchdogTimer?.cancel();
     if (_hasPendingSave) {
       // 快照当前数据后再保存，避免 clear 后保存空列表
       final snapshot = List<NetworkRequest>.from(_requests);
