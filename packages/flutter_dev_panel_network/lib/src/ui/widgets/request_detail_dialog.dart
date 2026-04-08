@@ -19,7 +19,11 @@ class RequestDetailDialog extends StatefulWidget {
 
 class _RequestDetailDialogState extends State<RequestDetailDialog> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final ScrollController _codeViewerHScrollController = ScrollController();
+  // Separate controllers for Request/Response tabs: Scrollbar with
+  // thumbVisibility requires a single ScrollPosition per controller,
+  // and TabBarView may mount adjacent tabs simultaneously.
+  final ScrollController _requestHScrollController = ScrollController();
+  final ScrollController _responseHScrollController = ScrollController();
 
   bool get _isSSE => widget.request.isSSE || widget.request.status == RequestStatus.streaming;
 
@@ -38,7 +42,8 @@ class _RequestDetailDialogState extends State<RequestDetailDialog> with SingleTi
   @override
   void dispose() {
     _tabController.dispose();
-    _codeViewerHScrollController.dispose();
+    _requestHScrollController.dispose();
+    _responseHScrollController.dispose();
     super.dispose();
   }
 
@@ -273,7 +278,7 @@ class _RequestDetailDialogState extends State<RequestDetailDialog> with SingleTi
       );
     }
     
-    return _buildCodeViewer(requestBody);
+    return _buildCodeViewer(requestBody, _requestHScrollController);
   }
 
   Widget _buildResponseTab() {
@@ -303,7 +308,7 @@ class _RequestDetailDialogState extends State<RequestDetailDialog> with SingleTi
       );
     }
     
-    return _buildCodeViewer(responseBody);
+    return _buildCodeViewer(responseBody, _responseHScrollController);
   }
 
   Widget _buildHeadersTab() {
@@ -408,7 +413,7 @@ class _RequestDetailDialogState extends State<RequestDetailDialog> with SingleTi
     );
   }
 
-  Widget _buildCodeViewer(String code) {
+  Widget _buildCodeViewer(String code, ScrollController scrollController) {
     final theme = Theme.of(context);
 
     return Container(
@@ -426,11 +431,11 @@ class _RequestDetailDialogState extends State<RequestDetailDialog> with SingleTi
             },
             child: ClipRect(
               child: Scrollbar(
-                controller: _codeViewerHScrollController,
+                controller: scrollController,
                 thumbVisibility: true,
                 trackVisibility: false,
                 child: SingleChildScrollView(
-                  controller: _codeViewerHScrollController,
+                  controller: scrollController,
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
                   child: SingleChildScrollView(

@@ -1,3 +1,9 @@
+## 1.2.3
+
+- **FIX**: Scrollbar crash when switching between Request/Response tabs in the request detail dialog
+  - Caused by sharing a single ScrollController with `thumbVisibility: true` across two SingleChildScrollViews mounted simultaneously by TabBarView
+  - Now uses separate ScrollControllers for Request and Response tabs
+
 ## 1.2.2
 
 - **FIX**: Pending requests stuck in FAB after page refresh or client recreation
