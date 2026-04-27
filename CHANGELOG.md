@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.1.7
+
+- **FIX**: Zone mismatch error on app startup when `enableLogCapture` is true
+  - `WidgetsFlutterBinding.ensureInitialized()` now always runs in the same Zone as `runApp()`
+  - Moved binding and environment initialization into the Zone body to prevent Flutter zone assertion
+
 ## 1.1.6
 
 - **FIX**: Environment variables now load in profile mode (and all build modes)

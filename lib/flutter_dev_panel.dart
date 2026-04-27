@@ -256,55 +256,51 @@ class DevPanel {
     void Function(Object error, StackTrace stack)? onError,
     List<EnvironmentConfig>? environments, // 可选的代码配置环境
   }) async {
-    // Environment loading runs in ALL build modes (debug, profile, release).
-    // It has zero runtime cost when no environments are configured.
-    WidgetsFlutterBinding.ensureInitialized();
-    await _initializeEnvironment(
-      config: config,
-      environments: environments,
-    );
+    // Shared initialization: binding + environment loading.
+    // Must be called inside the Zone that will also call runApp(),
+    // otherwise Flutter detects a zone mismatch.
+    Future<void> initAndRun() async {
+      WidgetsFlutterBinding.ensureInitialized();
 
-    // Debug UI is gated behind kDebugMode / FORCE_DEV_PANEL
-    if (!(kDebugMode || _forceDevPanel)) {
+      // Environment loading runs in ALL build modes (debug, profile, release).
+      // It has zero runtime cost when no environments are configured.
+      await _initializeEnvironment(
+        config: config,
+        environments: environments,
+      );
+
+      // Debug UI is gated behind kDebugMode / FORCE_DEV_PANEL
+      if (kDebugMode || _forceDevPanel) {
+        if (!_initialized) {
+          _initialized = true;
+          core.DevPanelCore.instance.initialize(
+            config: config,
+            modules: modules,
+            enableLogCapture: config.enableLogCapture,
+          );
+        }
+      }
+
       await appRunner();
+    }
+
+    // Non-debug mode: no Zone needed, run directly
+    if (!(kDebugMode || _forceDevPanel)) {
+      await initAndRun();
       return;
     }
 
-    // 创建一个包装函数，在 Zone 内初始化所有内容
-    Future<void> runInZone() async {
-      // Re-call ensureInitialized inside Zone to attach the binding to
-      // this Zone's error handler. Safe to call multiple times.
-      WidgetsFlutterBinding.ensureInitialized();
-
-      // 初始化 Dev Panel（必须在 binding 初始化之后）
-      if (!_initialized) {
-        _initialized = true;
-        core.DevPanelCore.instance.initialize(
-          config: config,
-          modules: modules,
-          enableLogCapture: config.enableLogCapture,
-        );
-      }
-
-      // 执行用户的 appRunner
-      await appRunner();
-    }
-
-    // 检查是否已经在 Zone 中
-    final currentZone = Zone.current;
+    // Check if we're already inside a DevPanel Zone
     final hasPrintInterception =
-        currentZone[#_devPanelPrintIntercepted] == true;
+        Zone.current[#_devPanelPrintIntercepted] == true;
 
-    if (hasPrintInterception) {
-      // 已经在拦截 print 的 Zone 中，直接运行
-      await runInZone();
-    } else if (!config.enableLogCapture) {
-      // 不需要拦截 print，直接运行
-      await runInZone();
+    if (hasPrintInterception || !config.enableLogCapture) {
+      // Already in a print-intercepting Zone, or log capture disabled
+      await initAndRun();
     } else {
       // 创建新的 Zone 来拦截 print
       await runZonedGuarded(
-        runInZone,
+        initAndRun,
         (error, stack) {
           // 延迟记录错误，避免在 binding 初始化前访问 DevLogger
           Future.microtask(() {
